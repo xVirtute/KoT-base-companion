@@ -149,26 +149,65 @@ function tweakStaging(stat, amount) {
 }
 
 function commitAndEndTurn() {
-  const player = gameState.players.find(p => p.id === gameState.activePlayerId);
-  if (player) {
-    // Commit the staged rewards safely to the permanent stats
-    player.vp = Math.min(20, player.vp + gameState.turnStaging.vp);
-    player.hp = Math.min(10, player.hp + gameState.turnStaging.hp);
-    player.energy = player.energy + gameState.turnStaging.energy;
+function commitAndEndTurn() {
+  const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
+  if (!attacker) return;
+
+  // 1. Commit the active attacker's basic rewards
+  attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
+  attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
+  attacker.energy = attacker.energy + gameState.turnStaging.energy;
+
+  // 2. 💥 RESOLVE TOKYO ATTACK RULES 💥
+  const attackDmg = gameState.turnStaging.damage;
+  if (attackDmg > 0) {
+    const attackerInTokyo = (attacker.location === 'tokyo' || attacker.location === 'harbor');
+    let someoneYielded = false;
+    let vacatedSlot = '';
+
+    gameState.players.forEach(target => {
+      if (target.id === attacker.id || target.hp <= 0) return; // Can't hit yourself or dead monsters
+
+      const targetInTokyo = (target.location === 'tokyo' || target.location === 'harbor');
+
+      // Cross-Boundary Combat: Outside hits Inside, Inside hits Outside
+      if ((attackerInTokyo && !targetInTokyo) || (!attackerInTokyo && targetInTokyo)) {
+        target.hp = Math.max(0, target.hp - attackDmg);
+
+        // TOKYO YIELD INTERACTION: Triggered if an inside monster survives an outside attack
+        if (!attackerInTokyo && targetInTokyo && target.hp > 0) {
+          const wantsToYield = confirm(`💥 ${target.name} took ${attackDmg} damage in Tokyo!\n\nDo they want to YIELD Tokyo and step outside?`);
+          if (wantsToYield) {
+            vacatedSlot = target.location; // Track if it was City or Harbor
+            target.location = 'outside';
+            someoneYielded = true;
+          }
+        }
+      }
+    });
+
+    // If a monster fled Tokyo, the attacker is automatically forced to march in and claim it
+    if (someoneYielded && attacker.location === 'outside') {
+      attacker.location = vacatedSlot;
+    }
   }
 
-  // 1. Reset turn states for the next round
+  // 3. Clean up the current turn state
   gameState.currentTurnResolved = true;
   turnRollCount = 0;
   
   const counterDisplay = document.getElementById('roll-counter-display');
   if (counterDisplay) counterDisplay.innerText = 0;
 
-  // 2. Clear out dice shelf completely
   buildFreshPool();
 
-  // 3. Pass the spotlight clockwise to the next living player
-  gameState.activePlayerId = (gameState.activePlayerId + 1) % gameState.players.length;
+  // 4. Pass turn clockwise (automatically skipping eliminated monsters)
+  let nextId = gameState.activePlayerId;
+  do {
+    nextId = (nextId + 1) % gameState.players.length;
+  } while (gameState.players[nextId].hp <= 0 && nextId !== gameState.activePlayerId);
+  
+  gameState.activePlayerId = nextId;
 
   renderScoreboard();
 }
