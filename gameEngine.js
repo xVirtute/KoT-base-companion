@@ -277,7 +277,19 @@ function commitAndEndTurn() {
     setPlayerLocation(attacker, 'tokyo');
     alert(`Rex Tokyo was empty! ${attacker.name} marches in. +1 VP awarded.`);
   }
-
+  // ==========================================
+  // EXPANSION AUTOMATION: Resolve End-of-Turn Poison
+  // ==========================================
+  if (attacker.tokens && attacker.tokens.poison > 0) {
+    attacker.hp = Math.max(0, attacker.hp - attacker.tokens.poison);
+    alert(`🤢 ${attacker.name} suffers ${attacker.tokens.poison} damage from Poison tokens at the end of their turn!`);
+    
+    // If poison kills them, boot them out of Tokyo immediately
+    if (attacker.hp === 0) {
+      attacker.location = 'outside';
+    }
+  }
+  // clean up the current turn state 
   gameState.currentTurnResolved = true;
   turnRollCount = 0;
   
@@ -386,6 +398,24 @@ function togglePlayerStatus(playerId, statusName) {
   renderScoreboard();
 }
 
+// NEW: Manages expansion tokens (Poison, Shrink, Smoke, Mimic)
+function changePlayerToken(playerId, tokenType, amount) {
+  const player = gameState.players.find(p => p.id === playerId);
+  if (!player) return;
+
+  // Safe initialization wrapper
+  if (!player.tokens) {
+    player.tokens = { poison: 0, shrink: 0, smoke: 0, mimic: false };
+  }
+
+  if (tokenType === 'mimic') {
+    player.tokens.mimic = !player.tokens.mimic;
+  } else {
+    player.tokens[tokenType] = Math.max(0, player.tokens[tokenType] + amount);
+  }
+
+  renderScoreboard();
+}
 
 
 // ==========================================
@@ -419,7 +449,18 @@ function toggleLockState(id) {
 }
 
 function executeManualRoll() {
-  if (executionLock) return;
+    if (executionLock) return;
+
+  // EXPANSION AUTOMATION: Shrink tokens subtract from maximum allowed dice
+  const activePlayer = gameState.players.find(p => p.id === gameState.activePlayerId);
+  const shrinkPenalty = (activePlayer && activePlayer.tokens) ? activePlayer.tokens.shrink : 0;
+  const maxAllowedDice = Math.max(1, 6 - shrinkPenalty); // Never drop below 1 die
+
+  // If the total dice pool array has expanded beyond our shrunken limit, trim it down
+  if (diceArray.length > maxAllowedDice) {
+    diceArray = diceArray.slice(0, maxAllowedDice);
+  }
+
   const rollTargets = diceArray.filter(d => !d.held);
   if (rollTargets.length === 0) return;
   
@@ -490,7 +531,6 @@ function showTab(targetTab) {
     renderTable();
   }
 }
-
 function renderScoreboard() {
     const container = document.getElementById('player-grid');
     if (!container) return;
@@ -501,82 +541,15 @@ function renderScoreboard() {
         const isActivePlayer = p.id === gameState.activePlayerId;
         const showStagingDrawer = isActivePlayer && !gameState.currentTurnResolved;
         
-        // 💀 Check if this specific monster is dead
-        const isEliminated = p.hp <= 0;
-
-        return `
-        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-4 rounded-xl flex flex-col gap-3 shadow-[4px_4px_0px_#000000] transition-all duration-200 relative">
-            
-            <div class="flex justify-between items-center w-full">
-                <div class="flex flex-col gap-2 cursor-pointer" onclick="changeActivePlayer(${p.id})">
-                  <div class="flex items-center gap-2">
-                    ${isActivePlayer && !isEliminated ? '<span class="text-yellow-400 text-sm animate-pulse">▶</span>' : ''}
-                    <span class="font-bold uppercase text-lg ${isEliminated ? 'text-zinc-600 line-through' : p.color}">${p.name}</span>
-                    ${isEliminated ? '<span class="bg-red-950 border border-red-800 text-[9px] font-comic-heavy text-red-400 px-1.5 py-0.5 rounded ml-2 tracking-wide uppercase">💀 SMASHED</span>' : ''}
-                  </div>
-                  <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block -mt-2">${p.monster}</span>
-                  
-                  <div class="flex gap-1.5 mt-1 ${isEliminated ? 'invisible' : ''}">
-                    <button onclick="toggleLocation(${p.id}, 'tokyo')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inCity ? 'bg-purple-600 border-purple-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
-                      👑 CITY
-                    </button>
-                    ${gameState.harborAvailable ? `
-                      <button onclick="toggleLocation(${p.id}, 'harbor')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inHarbor ? 'bg-sky-600 border-sky-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
-                        ⚓ HARBOR
-                      </button>
-                    ` : ''}
-                  </div>
-                </div>
-                
-                <div class="flex gap-4 text-center">
-                    ${renderStat(p.id, 'hp', p.hp, 'text-red-500')}
-                    ${renderStat(p.id, 'vp', p.vp, 'text-yellow-400')}
-                    ${renderStat(p.id, 'energy', p.energy, 'text-emerald-400')}
-                </div>
-            </div>
-
-            ${showStagingDrawer && !isEliminated ? `
-                <div class="mt-2 border-t border-zinc-800 pt-3 flex flex-col gap-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
-                    <div class="text-[11px] font-comic-heavy text-yellow-400 uppercase tracking-wider flex justify-between">
-                        <span>🎲 Staging Area</span>
-                        <span class="text-zinc-500">Tweak for Card Effects</span>
-                    </div>
-                    
-                    <div class="grid grid-cols-4 gap-1 text-center bg-zinc-900/50 p-2 rounded-lg border border-zinc-900">
-                        <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-yellow-400 uppercase">⭐ VP</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.vp}</span>
-                            <div class="flex gap-1.5">
-                                <button onclick="tweakStaging('vp', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
-                                <button onclick="tweakStaging('vp', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-red-500 uppercase">💚 HP</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.hp}</span>
-                            <div class="flex gap-1.5">
-                                <button onclick="tweakStaging('hp', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
-                                <button onclick="tweakStaging('hp', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-emerald-400 uppercase">⚡ ENG</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.energy}</span>
-function renderScoreboard() {
-    const container = document.getElementById('player-grid');
-    if (!container) return;
-    
-    container.innerHTML = gameState.players.map(p => {
-        const inCity = p.location === 'tokyo';
-        const inHarbor = p.location === 'harbor';
-        const isActivePlayer = p.id === gameState.activePlayerId;
-        const showStagingDrawer = isActivePlayer && !gameState.currentTurnResolved;
-        
-        // Check structural conditions
+        // Unpack status & token models safely
         const isZombie = p.statuses?.zombie || false;
         const hasArmor = p.statuses?.armor || false;
         
-        // A player is ONLY truly eliminated if they have 0 HP and lack the Zombie status
+        const poisonCount = p.tokens?.poison || 0;
+        const shrinkCount = p.tokens?.shrink || 0;
+        const smokeCount = p.tokens?.smoke || 0;
+        const hasMimic = p.tokens?.mimic || false;
+        
         const isEliminated = p.hp <= 0 && !isZombie;
 
         return `
@@ -588,6 +561,7 @@ function renderScoreboard() {
                     ${isActivePlayer && !isEliminated ? '<span class="text-yellow-400 text-sm animate-pulse">▶</span>' : ''}
                     <span class="font-bold uppercase text-lg ${isEliminated ? 'text-zinc-600 line-through' : p.color}">${p.name}</span>
                     ${isZombie ? '<span class="bg-emerald-950 border border-emerald-800 text-[9px] font-comic-heavy text-emerald-400 px-1.5 py-0.5 rounded ml-2 tracking-wide">🧟 ZOMBIE</span>' : isEliminated ? '<span class="bg-red-950 border border-red-800 text-[9px] font-comic-heavy text-red-400 px-1.5 py-0.5 rounded ml-2 tracking-wide">💀 SMASHED</span>' : ''}
+                    ${hasMimic ? '<span class="bg-indigo-950 border border-indigo-800 text-[9px] font-comic-heavy text-indigo-400 px-1.5 py-0.5 rounded tracking-wide">🧬 MIMIC</span>' : ''}
                   </div>
                   <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block -mt-2">${p.monster}</span>
                   
@@ -602,13 +576,39 @@ function renderScoreboard() {
                     ` : ''}
                   </div>
 
-                  <div class="flex gap-1.5 mt-1.5 ${isEliminated ? 'hidden' : ''}">
-                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'zombie')" class="px-2 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${isZombie ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
-                      🧟 ZOMBIE MODE
+                  <div class="flex gap-1.5 mt-1 ${isEliminated ? 'hidden' : ''}">
+                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'zombie')" class="px-1.5 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${isZombie ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
+                      🧟 ZOMBIE
                     </button>
-                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'armor')" class="px-2 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${hasArmor ? 'bg-amber-600 border-amber-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
-                      🛡️ ARMOR (+1 DEF)
+                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'armor')" class="px-1.5 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${hasArmor ? 'bg-amber-600 border-amber-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
+                      🛡️ ARMOR
                     </button>
+                    <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'mimic', 0)" class="px-1.5 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${hasMimic ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
+                      🧬 MIMIC
+                    </button>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2 mt-2 pt-1.5 border-t border-zinc-900 ${isEliminated ? 'hidden' : ''}">
+                    <div class="flex items-center bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800 gap-1.5">
+                      <span class="text-[10px] font-bold text-green-400">🤢</span>
+                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'poison', -1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">-</button>
+                      <span class="text-xs font-black text-zinc-200 min-w-[10px] text-center">${poisonCount}</span>
+                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'poison', 1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">+</button>
+                    </div>
+
+                    <div class="flex items-center bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800 gap-1.5">
+                      <span class="text-[10px] font-bold text-sky-400">🌀</span>
+                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'shrink', -1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">-</button>
+                      <span class="text-xs font-black text-zinc-200 min-w-[10px] text-center">${shrinkCount}</span>
+                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'shrink', 1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">+</button>
+                    </div>
+
+                    <div class="flex items-center bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800 gap-1.5">
+                      <span class="text-[10px] font-bold text-zinc-400">💨</span>
+                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'smoke', -1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">-</button>
+                      <span class="text-xs font-black text-zinc-200 min-w-[10px] text-center">${smokeCount}</span>
+                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'smoke', 1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">+</button>
+                    </div>
                   </div>
                 </div>
                 
