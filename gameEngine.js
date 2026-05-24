@@ -178,12 +178,31 @@ function executeManualRoll() {
     
     if (tickCount >= absoluteTicks) {
       clearInterval(shuffleTimer);
+      
+      // 1. Lock in the final absolute faces for the rolling dice
       rollTargets.forEach(die => {
         die.isShuffling = false;
         die.face = FACES[Math.floor(Math.random() * FACES.length)];
       });
+      
+      // 2. Reset our tally counter for this fresh calculation
+      gameState.rolledTotals = { one: 0, two: 0, three: 0, energy: 0, heart: 0, claw: 0 };
+      
+      // 3. Tally every single die in our pool (both held and just rolled)
+      diceArray.forEach(die => {
+        if (die.face) {
+          gameState.rolledTotals[die.face]++;
+        }
+      });
+      
+      // 4. Set our tracker flag to show a roll is hot and unsubmitted
+      gameState.currentTurnResolved = false;
+      
       executionLock = false;
       renderTable();
+      
+      // Optional debug line to verify it works on your phone:
+      console.log("Current Tally:", JSON.stringify(gameState.rolledTotals));
     }
   }, speedStep);
 }
