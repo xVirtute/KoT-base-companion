@@ -101,6 +101,13 @@ location: 'outside'
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
 // ==========================================
+function changeActivePlayer(playerId) {
+  gameState.activePlayerId = playerId;
+  // Clear out any unsaved staging data from the previous person so numbers don't leak
+  gameState.currentTurnResolved = true; 
+  renderScoreboard();
+}
+
 function sendRollToScoreboard() {
   const activePlayer = gameState.players.find(p => p.id === gameState.activePlayerId);
   if (!activePlayer) return;
@@ -312,7 +319,7 @@ function renderScoreboard() {
         <div class="bg-neutral-900 border-2 ${inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-4 rounded-xl flex flex-col gap-3 shadow-[4px_4px_0px_#000000] transition-all duration-200">
             
             <div class="flex justify-between items-center w-full">
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-2 cursor-pointer" onclick="changeActivePlayer(${p.id})">
                   <div class="flex items-center gap-2">
                     ${isActivePlayer ? '<span class="text-yellow-400 text-sm animate-pulse">▶</span>' : ''}
                     <span class="font-bold uppercase text-lg ${p.color}">${p.name}</span>
