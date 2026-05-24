@@ -80,6 +80,7 @@ function initGameFromSetup() {
       hp: 10,
       vp: 0,
       energy: 0
+location: 'outside'
     });
   });
   gameState.harborAvailable = gameState.players.length >= 5;
@@ -102,6 +103,23 @@ function changeScoreStat(playerId, stat, amount) {
         renderScoreboard();
     }
 }
+function toggleLocation(playerId, targetLocation) {
+  const player = gameState.players.find(p => p.id === playerId);
+  if (!player) return;
+
+  // If already there, clicking leaves Tokyo back to the outside world
+  if (player.location === targetLocation) {
+    player.location = 'outside';
+  } else {
+    // Eviction Rule: Anyone currently in our target slot gets booted outside
+    gameState.players.forEach(p => {
+      if (p.location === targetLocation) p.location = 'outside';
+    });
+    player.location = targetLocation;
+  }
+  renderScoreboard();
+}
+
 
 // ==========================================
 // 4. DICE ENGINE LOGIC
@@ -191,20 +209,41 @@ function renderScoreboard() {
     const container = document.getElementById('player-grid');
     if (!container) return;
     
-    container.innerHTML = gameState.players.map(p => `
-        <div class="bg-neutral-900 border-2 border-black p-4 rounded-xl flex justify-between items-center shadow-[4px_4px_0px_#000000]">
-            <div class="flex flex-col">
-              <span class="font-bold uppercase text-lg ${p.color}">${p.name}</span>
-              <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">${p.monster}</span>
+    container.innerHTML = gameState.players.map(p => {
+        // Set up active state visual highlights
+        const inCity = p.location === 'tokyo';
+        const inHarbor = p.location === 'harbor';
+
+        return `
+        <div class="bg-neutral-900 border-2 ${inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : 'border-black'} p-4 rounded-xl flex justify-between items-center shadow-[4px_4px_0px_#000000] transition-all duration-200">
+            <div class="flex flex-col gap-2">
+              <div>
+                <span class="font-bold uppercase text-lg ${p.color}">${p.name}</span>
+                <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">${p.monster}</span>
+              </div>
+              
+              <div class="flex gap-1.5 mt-1">
+                <button onclick="toggleLocation(${p.id}, 'tokyo')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inCity ? 'bg-purple-600 border-purple-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
+                  👑 CITY
+                </button>
+                ${gameState.harborAvailable ? `
+                  <button onclick="toggleLocation(${p.id}, 'harbor')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inHarbor ? 'bg-sky-600 border-sky-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}" style="content-visibility: auto;">
+                    ⚓ HARBOR
+                  </button>
+                ` : ''}
+              </div>
             </div>
+            
             <div class="flex gap-4 text-center">
                 ${renderStat(p.id, 'hp', p.hp, 'text-red-500')}
                 ${renderStat(p.id, 'vp', p.vp, 'text-yellow-400')}
                 ${renderStat(p.id, 'energy', p.energy, 'text-emerald-400')}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
+
 
 function renderStat(id, stat, value, colorClass) {
     return `
