@@ -208,6 +208,7 @@ function commitAndEndTurn() {
   
   // Pass turn and trigger the +2 VP check for the next player
   changeActivePlayer(nextId);
+    checkVictoryConditions();
 }
 
 function sendRollToScoreboard() {
@@ -266,7 +267,78 @@ function changeScoreStat(playerId, stat, amount) {
     }
 
     renderScoreboard();
+    checkVictoryConditions();
 }
+
+// NEW: Checks if a monster has won by points or survival
+function checkVictoryConditions() {
+  // 1. Condition A: Has anyone reached 20+ Victory Points?
+  const vpWinner = gameState.players.find(p => p.vp >= 20);
+  if (vpWinner) {
+    triggerVictoryScreen(vpWinner, "Victory by Points (20+ VP)!");
+    return;
+  }
+
+  // 2. Condition B: Is there only one surviving monster left?
+  const livingPlayers = gameState.players.filter(p => p.hp > 0);
+  if (livingPlayers.length === 1 && gameState.players.length > 1) {
+    triggerVictoryScreen(livingPlayers[0], "Last Monster Standing!");
+  }
+}
+
+// NEW: Generates and handles the full-screen winner card drop
+function triggerVictoryScreen(player, reason) {
+  let overlay = document.getElementById('victory-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'victory-overlay';
+    document.body.appendChild(overlay);
+  }
+  
+  // Set up dynamic layout coloring matching the monster's character theme
+  const borderClass = player.color ? player.color.replace('text-', 'border-') : 'border-yellow-400';
+
+  overlay.className = "fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in";
+  overlay.innerHTML = `
+    <div class="relative bg-zinc-950 border-4 ${borderClass} p-8 rounded-3xl max-w-sm w-full shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col items-center gap-4">
+      
+      <button onclick="dismissVictoryScreen()" class="absolute top-3 right-4 text-zinc-600 hover:text-zinc-300 font-sans text-xl font-black select-none p-1 active:scale-90 transition-all">✕</button>
+      
+      <span class="text-6xl animate-bounce mt-2">👑</span>
+      <h1 class="font-comic-heavy text-3xl uppercase tracking-wider ${player.color}">${player.name}</h1>
+      <p class="text-zinc-500 font-bold text-xs uppercase tracking-wide bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800 -mt-2">${player.monster}</p>
+      
+      <div class="my-3 text-yellow-400 font-comic-heavy text-base uppercase tracking-wide bg-yellow-500/10 border border-yellow-500/20 px-4 py-2 rounded-xl w-full">
+        ${reason}
+      </div>
+      
+      <button onclick="resetGameToSetup()" class="w-full mt-2 bg-yellow-400 border-2 border-black py-3 rounded-xl font-comic-heavy text-sm uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+        🔄 Start New Game
+      </button>
+    </div>
+  `;
+}
+
+function dismissVictoryScreen() {
+  const overlay = document.getElementById('victory-overlay');
+  if (overlay) overlay.remove();
+}
+
+function resetGameToSetup() {
+  dismissVictoryScreen();
+  
+  // Pivot UI visibility back to the initial layout setup screen
+  document.getElementById('tab-setup-view').classList.remove('hidden');
+  document.getElementById('main-nav').classList.add('hidden');
+  document.getElementById('tab-score-view').classList.add('hidden');
+  document.getElementById('tab-dice-view').classList.add('hidden');
+  
+  // Wipe variables clear for clean roster generation
+  gameState.players = [];
+  gameState.activePlayerId = 0;
+  gameState.currentTurnResolved = true;
+}
+
 
 // ==========================================
 // 4. DICE ENGINE LOGIC
