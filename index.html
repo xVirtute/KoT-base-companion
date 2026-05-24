@@ -120,15 +120,22 @@
       </section>
     </div>
 
-    <div class="w-full mt-4 flex gap-3 shrink-0">
-      <button id="roll-btn" onclick="executeManualRoll()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-comic-heavy text-2xl py-4 rounded-2xl comic-box-lg tracking-wide transform active:translate-y-[2px] active:shadow-[2px_2px_0px_#000000] transition-all">
-        SMASH & ROLL!
-      </button>
-      <div class="bg-zinc-900 border-5 border-black rounded-2xl px-5 flex items-center justify-center font-comic-heavy text-2xl text-yellow-400 shadow-[6px_6px_0px_#000000]">
-        <span>🎲</span><span id="roll-counter-display" class="ml-2">0</span>
-      </div>
+    <div class="flex flex-col gap-3 w-full px-4 pb-6">
+  <div class="flex gap-2 w-full">
+    <button onclick="executeManualRoll()" class="flex-1 bg-emerald-500 border-2 border-black py-4 rounded-2xl font-comic-heavy text-xl text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+      SMASH & ROLL!
+    </button>
+    <div class="bg-zinc-900 border border-zinc-800 px-4 flex items-center justify-center gap-2 rounded-2xl">
+      <span class="text-xl">🎲</span>
+      <span id="roll-counter-display" class="font-comic-heavy text-yellow-400 text-xl">0</span>
     </div>
   </div>
+
+  <button onclick="sendRollToScoreboard()" class="w-full bg-yellow-400 border-2 border-black py-3 rounded-xl font-comic-heavy text-sm uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+    👉 Send Turn to Scoreboard
+  </button>
+</div>
+
 
   <footer class="w-full p-2 bg-neutral-950 flex justify-center border-t border-neutral-800 shrink-0 z-50">
     <a href="https://ko-fi.com/virtute" target="_blank" class="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-lg border-2 border-black flex items-center gap-2 active:scale-95 transition-all">
