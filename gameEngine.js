@@ -32,15 +32,6 @@ const THEME_COLORS = [
   { name: "Orange", class: "text-orange-500" }
 ];
 
-const SVG_ASSETS = {
-  damage: `<svg viewBox="0 0 100 100" class="w-5/6 h-5/6 text-red-500 fill-current"><circle cx="50" cy="62" r="16"/><path d="M26,44 C21,34 31,24 36,36 Z"/><path d="M42,30 C41,16 53,14 53,28 Z"/><path d="M60,32 C64,16 75,22 70,36 Z"/><path d="M76,48 C83,40 90,52 80,58 Z"/></svg>`,
-  destruction: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-sky-400 fill-current"><path d="M30,90 L30,15 L70,15 L70,90 Z" /><rect x="38" y="25" width="8" height="12" fill="#18181b"/><rect x="54" y="25" width="8" height="12" fill="#18181b"/><rect x="38" y="47" width="8" height="12" fill="#18181b"/><rect x="54" y="47" width="8" height="12" fill="#18181b"/><rect x="38" y="69" width="8" height="12" fill="#18181b"/><rect x="54" y="69" width="8" height="12" fill="#18181b"/></svg>`,
-  energy: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-yellow-400 fill-current"><polygon points="62,8 24,54 52,54 38,92 76,46 48,46"/></svg>`,
-  fame: `<svg viewBox="0 0 100 100" class="w-5/6 h-5/6 text-purple-400 fill-current"><polygon points="50,8 63,38 96,38 69,58 79,90 50,70 21,90 31,58 4,38 37,38"/></svg>`,
-  ability: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-orange-500 fill-current"><path d="M50,10 C27.9,10 10,27.9 10,50 C10,72.1 27.9,90 50,90 C72.1,90 90,72.1 90,50 C90,27.9 72.1,10 50,10 Z M50,22 C54.4,22 55,26 54,48 C53.5,58 46.5,58 46,48 C45,26 45.6,22 50,22 Z M50,78 C45.6,78 44,74.4 44,70 C44,65.6 45.6,62 50,62 C54.4,62 56,65.6 56,70 C56,74.4 54.4,78 50,78 Z" fill-rule="evenodd"/></svg>`,
-  health: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-emerald-500 fill-current"><path d="M50,84 C50,84 14,60 14,36 C14,18 32,10 50,28 C68,10 86,18 86,36 C86,60 50,84 50,84 Z"/></svg>`
-};
-
 // ==========================================
 // 2. SETUP SCREEN CONTROLLER LOGIC
 // ==========================================
