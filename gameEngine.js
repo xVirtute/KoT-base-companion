@@ -2,11 +2,8 @@
 // 1. MASTER DATA LAYER (Model)
 // ==========================================
 let gameState = {
-    players: [
-        { id: 0, name: "Gigazaur", hp: 10, vp: 0, energy: 0 },
-        { id: 1, name: "Kraken", hp: 10, vp: 0, energy: 0 },
-        { id: 2, name: "Meka Dragon", hp: 10, vp: 0, energy: 0 }
-    ]
+    players: [],
+    harborAvailable: false
 };
 
 let turnRollCount = 0;
@@ -15,6 +12,16 @@ let diceArray = [];
 let executionLock = false;
 
 const FACES = ['damage', 'destruction', 'energy', 'fame', 'ability', 'health'];
+
+const MONSTERS = ["Gigazaur", "Kraken", "The King", "Cyber Bunny", "Alienoid", "Meka Dragon"];
+const THEME_COLORS = [
+  { name: "Red", class: "text-red-500" },
+  { name: "Yellow", class: "text-yellow-400" },
+  { name: "Emerald", class: "text-emerald-400" },
+  { name: "Blue", class: "text-blue-400" },
+  { name: "Purple", class: "text-purple-400" },
+  { name: "Orange", class: "text-orange-500" }
+];
 
 const SVG_ASSETS = {
   damage: `<svg viewBox="0 0 100 100" class="w-5/6 h-5/6 text-red-500 fill-current"><circle cx="50" cy="62" r="16"/><path d="M26,44 C21,34 31,24 36,36 Z"/><path d="M42,30 C41,16 53,14 53,28 Z"/><path d="M60,32 C64,16 75,22 70,36 Z"/><path d="M76,48 C83,40 90,52 80,58 Z"/></svg>`,
@@ -26,7 +33,68 @@ const SVG_ASSETS = {
 };
 
 // ==========================================
-// 2. SCORE & STATE CONTROLLER LOGIC
+// 2. SETUP SCREEN CONTROLLER LOGIC
+// ==========================================
+function setSetupPlayerCount(count) {
+  document.querySelectorAll('.setup-count-btn').forEach(btn => {
+    btn.className = "setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all";
+  });
+  const activeBtn = document.getElementById(`btn-count-${count}`);
+  if (activeBtn) activeBtn.className = "setup-count-btn bg-yellow-400 border-2 border-black py-2 rounded-xl font-comic-heavy text-lg text-neutral-950 scale-105 shadow-md transition-all";
+
+  const rosterContainer = document.getElementById('setup-players-roster');
+  if (!rosterContainer) return;
+
+  rosterContainer.innerHTML = Array.from({ length: count }).map((_, i) => `
+    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-2xl flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <span class="font-comic-heavy text-zinc-500 text-sm">#${i + 1}</span>
+        <input type="text" id="setup-name-${i}" placeholder="Player Name" value="Player ${i + 1}" class="flex-1 bg-black border border-zinc-800 px-3 py-1.5 rounded-xl font-sans text-sm focus:outline-none focus:border-yellow-400 text-zinc-200">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <select id="setup-monster-${i}" class="bg-zinc-950 border border-zinc-800 px-2 py-1.5 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none">
+          ${MONSTERS.map((m, idx) => `<option value="${m}" ${idx === i ? 'selected' : ''}>${m}</option>`).join('')}
+        </select>
+        <select id="setup-color-${i}" class="bg-zinc-950 border border-zinc-800 px-2 py-1.5 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none">
+          ${THEME_COLORS.map((c, idx) => `<option value="${c.class}" ${idx === i ? 'selected' : ''}>${c.name} Style</option>`).join('')}
+        </select>
+      </div>
+    </div>
+  `).join('');
+}
+
+function initGameFromSetup() {
+  const inputs = document.querySelectorAll('[id^="setup-name-"]');
+  gameState.players = [];
+  
+  inputs.forEach((_, i) => {
+    const nameVal = document.getElementById(`setup-name-${i}`).value.trim();
+    const monsterVal = document.getElementById(`setup-monster-${i}`).value;
+    const colorVal = document.getElementById(`setup-color-${i}`).value;
+
+    gameState.players.push({
+      id: i,
+      name: nameVal || monsterVal.toUpperCase(),
+      monster: monsterVal,
+      color: colorVal,
+      hp: 10,
+      vp: 0,
+      energy: 0
+    });
+  });
+
+  gameState.harborAvailable = gameState.players.length >= 5;
+
+  document.getElementById('tab-setup-view').classList.add('hidden');
+  document.getElementById('main-nav').classList.remove('hidden');
+  
+  buildFreshPool();
+  renderScoreboard();
+  showTab('score');
+}
+
+// ==========================================
+// 3. SCORE & STATE CONTROLLER LOGIC
 // ==========================================
 function changeScoreStat(playerId, stat, amount) {
     const player = gameState.players.find(p => p.id === playerId);
@@ -37,7 +105,7 @@ function changeScoreStat(playerId, stat, amount) {
 }
 
 // ==========================================
-// 3. DICE ENGINE LOGIC
+// 4. DICE ENGINE LOGIC
 // ==========================================
 function buildFreshPool() {
   diceArray = [];
@@ -63,6 +131,135 @@ function toggleLockState(id) {
   const target = diceArray.find(d => d.id === id);
   if (target.face === null) return;
   target.held = !target.held;
+  renderTable();
+}
+
+function executeManualRoll() {
+  if (executionLock) return;
+  const rollTargets = diceArray.filter(d => !d.held);
+  if (rollTargets.length === 0) return;
+  
+  turnRollCount++;
+  const counterDisplay = document.getElementById('roll-counter-display');
+  if (counterDisplay) counterDisplay.innerText = turnRollCount;
+  
+  executionLock = true;
+  let tickCount = 0;
+  const absoluteTicks = 8;
+  const speedStep = 38;
+  
+  const shuffleTimer = setInterval(() => {
+    rollTargets.forEach(die => {
+      die.isShuffling = true;
+      die.face = FACES[Math.floor(Math.random() * FACES.length)];
+    });
+    renderTable();
+    tickCount++;
+    
+    if (tickCount >= absoluteTicks) {
+      clearInterval(shuffleTimer);
+      rollTargets.forEach(die => {
+        die.isShuffling = false;
+        die.face = FACES[Math.floor(Math.random() * FACES.length)];
+      });
+      executionLock = false;
+      renderTable();
+    }
+  }, speedStep);
+}
+
+// ==========================================
+// 5. UI RENDERING LAYER (View)
+// ==========================================
+function showTab(targetTab) {
+  document.getElementById('tab-score-view').classList.toggle('hidden', targetTab !== 'score');
+  document.getElementById('tab-dice-view').classList.toggle('hidden', targetTab !== 'dice');
+  
+  const scoreBtn = document.getElementById('nav-score');
+  const diceBtn = document.getElementById('nav-dice');
+  
+  if (targetTab === 'score') {
+    scoreBtn.className = "flex-1 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-xs uppercase tracking-wider transition-all";
+    diceBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+  } else {
+    scoreBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+    diceBtn.className = "flex-1 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-xs uppercase tracking-wider transition-all";
+    renderTable();
+  }
+}
+
+function renderScoreboard() {
+    const container = document.getElementById('player-grid');
+    if (!container) return;
+    
+    container.innerHTML = gameState.players.map(p => `
+        <div class="bg-neutral-900 border-2 border-black p-4 rounded-xl flex justify-between items-center shadow-[4px_4px_0px_#000000]">
+            <div class="flex flex-col">
+              <span class="font-bold uppercase text-lg ${p.color}">${p.name}</span>
+              <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">${p.monster}</span>
+            </div>
+            <div class="flex gap-4 text-center">
+                ${renderStat(p.id, 'hp', p.hp, 'text-red-500')}
+                ${renderStat(p.id, 'vp', p.vp, 'text-yellow-400')}
+                ${renderStat(p.id, 'energy', p.energy, 'text-emerald-400')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderStat(id, stat, value, colorClass) {
+    return `
+        <div class="flex flex-col items-center w-14">
+            <span class="text-[9px] uppercase tracking-wider ${colorClass}/70 font-bold">${stat}</span>
+            <span class="text-2xl font-black ${colorClass}">${value}</span>
+            <div class="flex gap-2 mt-1">
+                <button onclick="changeScoreStat(${id}, '${stat}', -1)" class="bg-neutral-800 border border-black px-2 py-0.5 rounded text-xs select-none">-</button>
+                <button onclick="changeScoreStat(${id}, '${stat}', 1)" class="bg-neutral-800 border border-black px-2 py-0.5 rounded text-xs select-none">+</button>
+            </div>
+        </div>
+    `;
+}
+
+function renderTable() {
+  const activeShelf = document.getElementById('active-shelf');
+  const lockedShelf = document.getElementById('locked-shelf');
+  if (!activeShelf || !lockedShelf) return;
+  
+  activeShelf.innerHTML = '';
+  lockedShelf.innerHTML = '';
+  
+  diceArray.filter(d => !d.held).forEach(die => activeShelf.appendChild(generateDieMarkup(die)));
+  diceArray.filter(d => d.held).forEach(die => lockedShelf.appendChild(generateDieMarkup(die)));
+}
+
+function generateDieMarkup(die) {
+  const block = document.createElement('button');
+  let componentClasses = "aspect-square w-full max-w-[85px] rounded-2xl bg-zinc-800 border-4 border-zinc-700 flex items-center justify-center p-2 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all duration-75 ";
+  if (die.held) componentClasses += "held-style";
+  block.className = componentClasses;
+  if (die.isShuffling) block.classList.add('animate-tumble');
+  block.onclick = () => toggleLockState(die.id);
+  
+  if (die.face) block.innerHTML = SVG_ASSETS[die.face];
+  else block.innerHTML = `<span class="font-comic-heavy text-3xl text-zinc-600 select-none">?</span>`;
+  return block;
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
   renderTable();
 }
 
