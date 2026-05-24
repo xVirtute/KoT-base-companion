@@ -143,74 +143,6 @@ function changeActivePlayer(playerId) {
   renderScoreboard();
 }
 
-// UPDATED: Handles combat resolution, empty Tokyo checks, and turn routing
-function commitAndEndTurn() {
-  const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
-  if (!attacker) return;
-
-  // 1. Commit the active attacker's basic rewards
-  attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
-  attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
-  attacker.energy = attacker.energy + gameState.turnStaging.energy;
-
-  // 2. Resolve Tokyo Attack Rules
-  const attackDmg = gameState.turnStaging.damage;
-  const attackerInTokyo = (attacker.location === 'tokyo' || attacker.location === 'harbor');
-  let someoneYielded = false;
-  let vacatedSlot = '';
-
-  if (attackDmg > 0) {
-    gameState.players.forEach(target => {
-      if (target.id === attacker.id || target.hp <= 0) return; 
-
-      const targetInTokyo = (target.location === 'tokyo' || target.location === 'harbor');
-
-      if ((attackerInTokyo && !targetInTokyo) || (!attackerInTokyo && targetInTokyo)) {
-        target.hp = Math.max(0, target.hp - attackDmg);
-
-        if (!attackerInTokyo && targetInTokyo && target.hp > 0) {
-          const wantsToYield = confirm(`💥 ${target.name} took ${attackDmg} damage in Tokyo!\n\nDo they want to YIELD Tokyo and step outside?`);
-          if (wantsToYield) {
-            vacatedSlot = target.location;
-            setPlayerLocation(target, 'outside');
-            someoneYielded = true;
-          }
-        }
-      }
-    });
-
-    if (someoneYielded && attacker.location === 'outside') {
-      setPlayerLocation(attacker, vacatedSlot); // Automatically gets +1 VP via helper
-    }
-  }
-
-  // 3. Rule Check: If Tokyo is completely empty at the end of the turn, the active player must enter
-  const isTokyoOccupied = gameState.players.some(p => p.hp > 0 && p.location === 'tokyo');
-  if (!isTokyoOccupied && attacker.hp > 0 && attacker.location === 'outside') {
-    setPlayerLocation(attacker, 'tokyo');
-    alert(`🦖 Tokyo was empty! ${attacker.name} marches in. +1 VP awarded.`);
-  }
-
-  // 4. Clean up the current turn state
-  gameState.currentTurnResolved = true;
-  turnRollCount = 0;
-  
-  const counterDisplay = document.getElementById('roll-counter-display');
-  if (counterDisplay) counterDisplay.innerText = 0;
-
-  buildFreshPool();
-
-  // 5. Pass turn clockwise (skipping eliminated monsters)
-  let nextId = gameState.activePlayerId;
-  do {
-    nextId = (nextId + 1) % gameState.players.length;
-  } while (gameState.players[nextId].hp <= 0 && nextId !== gameState.activePlayerId);
-  
-  // Pass turn and trigger the +2 VP check for the next player
-  changeActivePlayer(nextId);
-    checkVictoryConditions();
-}
-
 function sendRollToScoreboard() {
   const activePlayer = gameState.players.find(p => p.id === gameState.activePlayerId);
   if (!activePlayer) return;
@@ -255,19 +187,113 @@ function changeScoreStat(playerId, stat, amount) {
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) return;
 
-    // Prevent modifying stats for an already eliminated monster
-    if (player.hp <= 0 && stat !== 'hp') return; 
+    if (!player.statuses) player.statuses = { zombie: false, armor: false };
+
+    // 🧟 ZOMBIE RULE: Completely block healing modifications
+    if (player.statuses.zombie && stat === 'hp' && amount > 0) {
+        alert(`🧟 Undead monsters cannot heal!`);
+        return;
+    }
+
+    // Standard elimination checkpoint
+    const isCurrentlyDead = player.hp <= 0 && !player.statuses.zombie;
+    if (isCurrentlyDead && stat !== 'hp') return; 
 
     player[stat] = Math.max(0, player[stat] + amount);
 
-    // Elimination Trigger: If HP hits 0, boot them from the board
-    if (stat === 'hp' && player.hp === 0) {
+    // Elimination Trigger: Ignore if they are currently a zombie
+    if (stat === 'hp' && player.hp === 0 && !player.statuses.zombie) {
         player.location = 'outside';
         alert(`💀 ${player.name} has been eliminated from the game!`);
     }
 
     renderScoreboard();
     checkVictoryConditions();
+}
+
+function commitAndEndTurn() {
+  const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
+  if (!attacker) return;
+
+  attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
+  attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
+  attacker.energy = attacker.energy + gameState.turnStaging.energy;
+
+  const attackDmg = gameState.turnStaging.damage;
+  const attackerInTokyo = (attacker.location === 'tokyo' || attacker.location === 'harbor');
+  let someoneYielded = false;
+  let vacatedSlot = '';
+
+  if (attackDmg > 0) {
+    gameState.players.forEach(target => {
+      if (target.id === attacker.id) return;
+      
+      // Check if target is truly dead (HP 0 and not a zombie)
+      const targetDead = target.hp <= 0 && (!target.statuses || !target.statuses.zombie);
+      if (targetDead) return;
+
+      const targetInTokyo = (target.location === 'tokyo' || target.location === 'harbor');
+
+      if ((attackerInTokyo && !targetInTokyo) || (!attackerInTokyo && targetInTokyo)) {
+        
+        // 🛡️ ARMOR RULE: Mitigate incoming smash values by 1
+        let finalDamage = attackDmg;
+        if (target.statuses && target.statuses.armor) {
+          finalDamage = Math.max(0, finalDamage - 1);
+        }
+
+        target.hp = Math.max(0, target.hp - finalDamage);
+
+        // Handle survival interactions and yield requests
+        if (!attackerInTokyo && targetInTokyo && target.hp > 0) {
+          const wantsToYield = confirm(`💥 ${target.name} took ${finalDamage} damage in Tokyo!\n\nDo they want to YIELD Tokyo and step outside?`);
+          if (wantsToYield) {
+            vacatedSlot = target.location;
+            setPlayerLocation(target, 'outside');
+            someoneYielded = true;
+          }
+        }
+        
+        // Automatic Eviction rule if a non-zombie hits absolute zero
+        if (target.hp === 0 && (!target.statuses || !target.statuses.zombie) && targetInTokyo) {
+          vacatedSlot = target.location;
+          setPlayerLocation(target, 'outside');
+          someoneYielded = true;
+        }
+      }
+    });
+
+    if (someoneYielded && attacker.location === 'outside') {
+      setPlayerLocation(attacker, vacatedSlot);
+    }
+  }
+
+  const isTokyoOccupied = gameState.players.some(p => {
+    const isAlive = p.hp > 0 || (p.statuses && p.statuses.zombie);
+    return isAlive && p.location === 'tokyo';
+  });
+  
+  if (!isTokyoOccupied && attacker.hp > 0 && attacker.location === 'outside') {
+    setPlayerLocation(attacker, 'tokyo');
+    alert(`Rex Tokyo was empty! ${attacker.name} marches in. +1 VP awarded.`);
+  }
+
+  gameState.currentTurnResolved = true;
+  turnRollCount = 0;
+  
+  const counterDisplay = document.getElementById('roll-counter-display');
+  if (counterDisplay) counterDisplay.innerText = 0;
+
+  buildFreshPool();
+
+  // Route clockwise, skipping only truly eliminated players (0 HP and NOT a zombie)
+  let nextId = gameState.activePlayerId;
+  do {
+    nextId = (nextId + 1) % gameState.players.length;
+  } while (gameState.players[nextId].hp <= 0 && (!gameState.players[nextId].statuses || !gameState.players[nextId].statuses.zombie) && nextId !== gameState.activePlayerId);
+  
+  changeActivePlayer(nextId);
+  checkVictoryConditions();
 }
 
 // NEW: Checks if a monster has won by points or survival
@@ -338,6 +364,28 @@ function resetGameToSetup() {
   gameState.activePlayerId = 0;
   gameState.currentTurnResolved = true;
 }
+
+// NEW: Toggles card statuses safely and handles rule resets
+function togglePlayerStatus(playerId, statusName) {
+  const player = gameState.players.find(p => p.id === playerId);
+  if (!player) return;
+
+  // Initialize status memory safe-net if missing
+  if (!player.statuses) {
+    player.statuses = { zombie: false, armor: false };
+  }
+
+  player.statuses[statusName] = !player.statuses[statusName];
+
+  // Rule Cleanup: If they turn off Zombie mode while at 0 HP, they instantly drop dead
+  if (statusName === 'zombie' && !player.statuses.zombie && player.hp === 0) {
+    player.location = 'outside';
+    alert(`💀 ${player.name} is no longer a Zombie and collapses! Eliminated.`);
+  }
+
+  renderScoreboard();
+}
+
 
 
 // ==========================================
@@ -477,6 +525,90 @@ function renderScoreboard() {
                         ⚓ HARBOR
                       </button>
                     ` : ''}
+                  </div>
+                </div>
+                
+                <div class="flex gap-4 text-center">
+                    ${renderStat(p.id, 'hp', p.hp, 'text-red-500')}
+                    ${renderStat(p.id, 'vp', p.vp, 'text-yellow-400')}
+                    ${renderStat(p.id, 'energy', p.energy, 'text-emerald-400')}
+                </div>
+            </div>
+
+            ${showStagingDrawer && !isEliminated ? `
+                <div class="mt-2 border-t border-zinc-800 pt-3 flex flex-col gap-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                    <div class="text-[11px] font-comic-heavy text-yellow-400 uppercase tracking-wider flex justify-between">
+                        <span>🎲 Staging Area</span>
+                        <span class="text-zinc-500">Tweak for Card Effects</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-1 text-center bg-zinc-900/50 p-2 rounded-lg border border-zinc-900">
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] font-bold text-yellow-400 uppercase">⭐ VP</span>
+                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.vp}</span>
+                            <div class="flex gap-1.5">
+                                <button onclick="tweakStaging('vp', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
+                                <button onclick="tweakStaging('vp', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] font-bold text-red-500 uppercase">💚 HP</span>
+                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.hp}</span>
+                            <div class="flex gap-1.5">
+                                <button onclick="tweakStaging('hp', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
+                                <button onclick="tweakStaging('hp', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] font-bold text-emerald-400 uppercase">⚡ ENG</span>
+                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.energy}</span>
+function renderScoreboard() {
+    const container = document.getElementById('player-grid');
+    if (!container) return;
+    
+    container.innerHTML = gameState.players.map(p => {
+        const inCity = p.location === 'tokyo';
+        const inHarbor = p.location === 'harbor';
+        const isActivePlayer = p.id === gameState.activePlayerId;
+        const showStagingDrawer = isActivePlayer && !gameState.currentTurnResolved;
+        
+        // Check structural conditions
+        const isZombie = p.statuses?.zombie || false;
+        const hasArmor = p.statuses?.armor || false;
+        
+        // A player is ONLY truly eliminated if they have 0 HP and lack the Zombie status
+        const isEliminated = p.hp <= 0 && !isZombie;
+
+        return `
+        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-4 rounded-xl flex flex-col gap-3 shadow-[4px_4px_0px_#000000] transition-all duration-200 relative">
+            
+            <div class="flex justify-between items-center w-full">
+                <div class="flex flex-col gap-2 cursor-pointer" onclick="changeActivePlayer(${p.id})">
+                  <div class="flex items-center gap-2">
+                    ${isActivePlayer && !isEliminated ? '<span class="text-yellow-400 text-sm animate-pulse">▶</span>' : ''}
+                    <span class="font-bold uppercase text-lg ${isEliminated ? 'text-zinc-600 line-through' : p.color}">${p.name}</span>
+                    ${isZombie ? '<span class="bg-emerald-950 border border-emerald-800 text-[9px] font-comic-heavy text-emerald-400 px-1.5 py-0.5 rounded ml-2 tracking-wide">🧟 ZOMBIE</span>' : isEliminated ? '<span class="bg-red-950 border border-red-800 text-[9px] font-comic-heavy text-red-400 px-1.5 py-0.5 rounded ml-2 tracking-wide">💀 SMASHED</span>' : ''}
+                  </div>
+                  <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block -mt-2">${p.monster}</span>
+                  
+                  <div class="flex gap-1.5 mt-1 ${isEliminated ? 'invisible' : ''}">
+                    <button onclick="toggleLocation(${p.id}, 'tokyo')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inCity ? 'bg-purple-600 border-purple-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
+                      👑 CITY
+                    </button>
+                    ${gameState.harborAvailable ? `
+                      <button onclick="toggleLocation(${p.id}, 'harbor')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inHarbor ? 'bg-sky-600 border-sky-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
+                        ⚓ HARBOR
+                      </button>
+                    ` : ''}
+                  </div>
+
+                  <div class="flex gap-1.5 mt-1.5 ${isEliminated ? 'hidden' : ''}">
+                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'zombie')" class="px-2 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${isZombie ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
+                      🧟 ZOMBIE MODE
+                    </button>
+                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'armor')" class="px-2 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${hasArmor ? 'bg-amber-600 border-amber-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
+                      🛡️ ARMOR (+1 DEF)
+                    </button>
                   </div>
                 </div>
                 
