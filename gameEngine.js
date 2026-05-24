@@ -4,9 +4,10 @@
 let gameState = {
     players: [],
     harborAvailable: false,
-    activePlayerId: 0,       // Tracks whose turn it is (defaults to Player 1)
-    currentTurnResolved: true, // Hides the summary card until dice are rolled
-    rolledTotals: { one: 0, two: 0, three: 0, energy: 0, heart: 0, claw: 0 }
+    activePlayerId: 0,         // Tracks whose turn it is (0 = Player 1, 1 = Player 2, etc.)
+    currentTurnResolved: true,   // Hides the staging drawer until a roll is sent over
+    rolledTotals: { one: 0, two: 0, three: 0, energy: 0, heart: 0, claw: 0 },
+    turnStaging: { vp: 0, hp: 0, energy: 0, damage: 0 } // Our temporary tweakable staging area
 };
 
 let turnRollCount = 0;
@@ -99,6 +100,71 @@ location: 'outside'
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
 // ==========================================
+function sendRollToScoreboard() {
+  const activePlayer = gameState.players.find(p => p.id === gameState.activePlayerId);
+  if (!activePlayer) return;
+
+  const t = gameState.rolledTotals;
+  
+  // 1. Calculate Standard Points (3-of-a-kind rule)
+  let calculatedVp = 0;
+  if (t.one >= 3) calculatedVp += 1 + (t.one - 3);
+  if (t.two >= 3) calculatedVp += 2 + (t.two - 3);
+  if (t.three >= 3) calculatedVp += 3 + (t.three - 3);
+
+  // 2. Calculate Energy
+  let calculatedEnergy = t.energy;
+  
+  // 3. Calculate Hearts (Heal only works if you are OUTSIDE Tokyo)
+  let calculatedHp = (activePlayer.location === 'outside') ? t.heart : 0;
+  
+  // 4. Calculate Attack Smashes
+  let calculatedDamage = t.claw;
+
+  // Save everything to our tweakable staging deck
+  gameState.turnStaging = {
+    vp: calculatedVp,
+    hp: calculatedHp,
+    energy: calculatedEnergy,
+    damage: calculatedDamage
+  };
+
+  gameState.currentTurnResolved = false;
+  
+  // Go back to scoreboard view and refresh layout
+  showTab('score');
+  renderScoreboard();
+}
+function tweakStaging(stat, amount) {
+  gameState.turnStaging[stat] = Math.max(0, gameState.turnStaging[stat] + amount);
+  renderScoreboard();
+}
+
+function commitAndEndTurn() {
+  const player = gameState.players.find(p => p.id === gameState.activePlayerId);
+  if (player) {
+    // Commit the staged rewards safely to the permanent stats
+    player.vp = Math.min(20, player.vp + gameState.turnStaging.vp);
+    player.hp = Math.min(10, player.hp + gameState.turnStaging.hp);
+    player.energy = player.energy + gameState.turnStaging.energy;
+  }
+
+  // 1. Reset turn states for the next round
+  gameState.currentTurnResolved = true;
+  turnRollCount = 0;
+  
+  const counterDisplay = document.getElementById('roll-counter-display');
+  if (counterDisplay) counterDisplay.innerText = 0;
+
+  // 2. Clear out dice shelf completely
+  buildFreshPool();
+
+  // 3. Pass the spotlight clockwise to the next living player
+  gameState.activePlayerId = (gameState.activePlayerId + 1) % gameState.players.length;
+
+  renderScoreboard();
+}
+
 function changeScoreStat(playerId, stat, amount) {
     const player = gameState.players.find(p => p.id === playerId);
     if (player) {
