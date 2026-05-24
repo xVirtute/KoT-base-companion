@@ -101,11 +101,113 @@ location: 'outside'
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
 // ==========================================
+// NEW HELPER: Handles moves and automatically awards +1 VP for entering Tokyo
+function setPlayerLocation(player, newLocation) {
+  const oldLocation = player.location;
+  player.location = newLocation;
+
+  // Rule: Entering Tokyo/Harbor from the outside rewards 1 VP instantly
+  if (oldLocation === 'outside' && (newLocation === 'tokyo' || newLocation === 'harbor')) {
+    player.vp = Math.min(20, player.vp + 1);
+  }
+}
+
+// UPDATED: Now uses our helper to safely handle manual scoreboard overrides
+function toggleLocation(playerId, targetLocation) {
+  const player = gameState.players.find(p => p.id === playerId);
+  if (!player) return;
+
+  if (player.location === targetLocation) {
+    setPlayerLocation(player, 'outside');
+  } else {
+    // Eviction Rule: Kick out anyone currently in that specific slot
+    gameState.players.forEach(p => {
+      if (p.location === targetLocation) setPlayerLocation(p, 'outside');
+    });
+    setPlayerLocation(player, targetLocation);
+  }
+  renderScoreboard();
+}
+
+// UPDATED: Now automatically awards +2 VP if the newly selected player starts in Tokyo
 function changeActivePlayer(playerId) {
   gameState.activePlayerId = playerId;
-  // Clear out any unsaved staging data from the previous person so numbers don't leak
   gameState.currentTurnResolved = true; 
+
+  const player = gameState.players.find(p => p.id === playerId);
+  if (player && player.hp > 0 && (player.location === 'tokyo' || player.location === 'harbor')) {
+    player.vp = Math.min(20, player.vp + 2);
+    alert(`👑 ${player.name} starts their turn in Tokyo! +2 VP awarded.`);
+  }
+
   renderScoreboard();
+}
+
+// UPDATED: Handles combat resolution, empty Tokyo checks, and turn routing
+function commitAndEndTurn() {
+  const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
+  if (!attacker) return;
+
+  // 1. Commit the active attacker's basic rewards
+  attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
+  attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
+  attacker.energy = attacker.energy + gameState.turnStaging.energy;
+
+  // 2. Resolve Tokyo Attack Rules
+  const attackDmg = gameState.turnStaging.damage;
+  const attackerInTokyo = (attacker.location === 'tokyo' || attacker.location === 'harbor');
+  let someoneYielded = false;
+  let vacatedSlot = '';
+
+  if (attackDmg > 0) {
+    gameState.players.forEach(target => {
+      if (target.id === attacker.id || target.hp <= 0) return; 
+
+      const targetInTokyo = (target.location === 'tokyo' || target.location === 'harbor');
+
+      if ((attackerInTokyo && !targetInTokyo) || (!attackerInTokyo && targetInTokyo)) {
+        target.hp = Math.max(0, target.hp - attackDmg);
+
+        if (!attackerInTokyo && targetInTokyo && target.hp > 0) {
+          const wantsToYield = confirm(`💥 ${target.name} took ${attackDmg} damage in Tokyo!\n\nDo they want to YIELD Tokyo and step outside?`);
+          if (wantsToYield) {
+            vacatedSlot = target.location;
+            setPlayerLocation(target, 'outside');
+            someoneYielded = true;
+          }
+        }
+      }
+    });
+
+    if (someoneYielded && attacker.location === 'outside') {
+      setPlayerLocation(attacker, vacatedSlot); // Automatically gets +1 VP via helper
+    }
+  }
+
+  // 3. Rule Check: If Tokyo is completely empty at the end of the turn, the active player must enter
+  const isTokyoOccupied = gameState.players.some(p => p.hp > 0 && p.location === 'tokyo');
+  if (!isTokyoOccupied && attacker.hp > 0 && attacker.location === 'outside') {
+    setPlayerLocation(attacker, 'tokyo');
+    alert(`🦖 Tokyo was empty! ${attacker.name} marches in. +1 VP awarded.`);
+  }
+
+  // 4. Clean up the current turn state
+  gameState.currentTurnResolved = true;
+  turnRollCount = 0;
+  
+  const counterDisplay = document.getElementById('roll-counter-display');
+  if (counterDisplay) counterDisplay.innerText = 0;
+
+  buildFreshPool();
+
+  // 5. Pass turn clockwise (skipping eliminated monsters)
+  let nextId = gameState.activePlayerId;
+  do {
+    nextId = (nextId + 1) % gameState.players.length;
+  } while (gameState.players[nextId].hp <= 0 && nextId !== gameState.activePlayerId);
+  
+  // Pass turn and trigger the +2 VP check for the next player
+  changeActivePlayer(nextId);
 }
 
 function sendRollToScoreboard() {
@@ -148,69 +250,6 @@ function tweakStaging(stat, amount) {
   renderScoreboard();
 }
 
-function commitAndEndTurn() {
-  const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
-  if (!attacker) return;
-
-  // 1. Commit the active attacker's basic rewards
-  attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
-  attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
-  attacker.energy = attacker.energy + gameState.turnStaging.energy;
-
-  // 2. 💥 RESOLVE TOKYO ATTACK RULES 💥
-  const attackDmg = gameState.turnStaging.damage;
-  if (attackDmg > 0) {
-    const attackerInTokyo = (attacker.location === 'tokyo' || attacker.location === 'harbor');
-    let someoneYielded = false;
-    let vacatedSlot = '';
-
-    gameState.players.forEach(target => {
-      if (target.id === attacker.id || target.hp <= 0) return; // Can't hit yourself or dead monsters
-
-      const targetInTokyo = (target.location === 'tokyo' || target.location === 'harbor');
-
-      // Cross-Boundary Combat: Outside hits Inside, Inside hits Outside
-      if ((attackerInTokyo && !targetInTokyo) || (!attackerInTokyo && targetInTokyo)) {
-        target.hp = Math.max(0, target.hp - attackDmg);
-
-        // TOKYO YIELD INTERACTION: Triggered if an inside monster survives an outside attack
-        if (!attackerInTokyo && targetInTokyo && target.hp > 0) {
-          const wantsToYield = confirm(`💥 ${target.name} took ${attackDmg} damage in Tokyo!\n\nDo they want to YIELD Tokyo and step outside?`);
-          if (wantsToYield) {
-            vacatedSlot = target.location; // Track if it was City or Harbor
-            target.location = 'outside';
-            someoneYielded = true;
-          }
-        }
-      }
-    });
-
-    // If a monster fled Tokyo, the attacker is automatically forced to march in and claim it
-    if (someoneYielded && attacker.location === 'outside') {
-      attacker.location = vacatedSlot;
-    }
-  }
-
-  // 3. Clean up the current turn state
-  gameState.currentTurnResolved = true;
-  turnRollCount = 0;
-  
-  const counterDisplay = document.getElementById('roll-counter-display');
-  if (counterDisplay) counterDisplay.innerText = 0;
-
-  buildFreshPool();
-
-  // 4. Pass turn clockwise (automatically skipping eliminated monsters)
-  let nextId = gameState.activePlayerId;
-  do {
-    nextId = (nextId + 1) % gameState.players.length;
-  } while (gameState.players[nextId].hp <= 0 && nextId !== gameState.activePlayerId);
-  
-  gameState.activePlayerId = nextId;
-
-  renderScoreboard();
-}
-
 function changeScoreStat(playerId, stat, amount) {
     const player = gameState.players.find(p => p.id === playerId);
     if (player) {
@@ -218,22 +257,7 @@ function changeScoreStat(playerId, stat, amount) {
         renderScoreboard();
     }
 }
-function toggleLocation(playerId, targetLocation) {
-  const player = gameState.players.find(p => p.id === playerId);
-  if (!player) return;
 
-  // If already there, clicking leaves Tokyo back to the outside world
-  if (player.location === targetLocation) {
-    player.location = 'outside';
-  } else {
-    // Eviction Rule: Anyone currently in our target slot gets booted outside
-    gameState.players.forEach(p => {
-      if (p.location === targetLocation) p.location = 'outside';
-    });
-    player.location = targetLocation;
-  }
-  renderScoreboard();
-}
 
 
 // ==========================================
