@@ -136,9 +136,13 @@
     </a>
   </footer>
 
-  <script src="gameEngine.js?v=2"></script>
-  <script>
+<script src="gameEngine.js?v=2"></script>
+<script>
+  try {
     setSetupPlayerCount(2);
-  </script>
+  } catch (error) {
+    alert("Found the bug! Code says: " + error.message);
+  }
+</script>
 </body>
 </html>
