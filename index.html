@@ -1,25 +1,115 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>King of Tokyo: Companion</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>King of Tokyo: Companion Suite</title>
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b0b0c">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Bangers&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #0b0b0c;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .viewport-lock {
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .font-comic-heavy { font-family: 'Luckiest Guy', cursive; }
+    .font-comic-clean { font-family: 'Bangers', cursive; letter-spacing: 0.05em; }
+
+    .comic-box { border: 4px solid #000000; box-shadow: 6px 6px 0px #000000; }
+    .comic-box-sm { border: 3px solid #000000; box-shadow: 3px 3px 0px #000000; }
+    .comic-box-lg { border: 5px solid #000000; box-shadow: 8px 8px 0px #000000; }
+
+    .held-style {
+      border-color: #a855f7 !important;
+      box-shadow: 0 0 20px 6px rgba(168, 85, 247, 0.65), 4px 4px 0px #000000 !important;
+      transform: translateY(-4px);
+    }
+
+    @keyframes fastTumble {
+      0% { transform: scale(1) rotate(0deg); filter: brightness(1.1); }
+      50% { transform: scale(1.08) rotate(-8deg); }
+      100% { transform: scale(1) rotate(8deg); }
+    }
+    .animate-tumble { animation: fastTumble 0.15s infinite alternate ease-in-out; }
+  </style>
 </head>
-<body class="bg-zinc-950 text-white min-h-screen flex flex-col">
+<body class="text-zinc-100 min-h-screen flex flex-col justify-between">
 
-    <div id="player-grid" class="p-4 grid gap-4"></div>
+  <div class="p-4 bg-neutral-900/50 border-b border-neutral-800 flex justify-center gap-4 shrink-0">
+    <button id="nav-score" onclick="showTab('score')" class="px-6 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-sm uppercase shadow tracking-wider transition-all">
+      Scoreboard
+    </button>
+    <button id="nav-dice" onclick="showTab('dice')" class="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 font-comic-heavy rounded-xl text-sm uppercase text-neutral-400 hover:text-white tracking-wider transition-all">
+      Dice Tokyo
+    </button>
+  </div>
 
-    <footer class="mt-auto p-4 text-center">
-        <a href="https://ko-fi.com/virtute" class="text-blue-400">☕ Support</a>
-    </footer>
+  <div id="tab-score-view" class="flex-1 p-4 overflow-y-auto">
+    <div id="player-grid" class="grid grid-cols-1 gap-4 max-w-md mx-auto">
+      </div>
+  </div>
 
-    <script src="gameEngine.js"></script>
-    <script>
-        // Initial render on load
-        renderScoreboard();
-    </script>
+  <div id="tab-dice-view" class="flex-1 p-4 max-w-xl mx-auto hidden flex flex-col justify-between min-h-0">
+    <section class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex items-center justify-between gap-4 shrink-0 mb-4">
+      <span class="font-comic-clean text-2xl text-zinc-400 uppercase">Dice Pool Size</span>
+      <div class="flex items-center bg-black rounded-xl p-1 border-2 border-zinc-800">
+        <button onclick="adjustPoolSize(-1)" class="w-10 h-10 rounded-lg bg-zinc-800 text-rose-500 font-comic-heavy text-xl flex items-center justify-center hover:bg-zinc-700 active:scale-95 transition-all">-</button>
+        <span id="pool-display" class="w-12 text-center font-comic-heavy text-2xl text-yellow-400">6</span>
+        <button onclick="adjustPoolSize(1)" class="w-10 h-10 rounded-lg bg-zinc-800 text-emerald-400 font-comic-heavy text-xl flex items-center justify-center hover:bg-zinc-700 active:scale-95 transition-all">+</button>
+      </div>
+    </section>
+
+    <div class="flex-1 flex flex-col gap-4 min-h-0 overflow-y-auto pb-2">
+      <section class="bg-zinc-900/40 border-2 border-dashed border-zinc-800 rounded-2xl p-4 flex flex-col justify-center min-h-[140px]">
+        <div id="active-shelf" class="grid grid-cols-4 gap-3 justify-items-center items-center w-full m-auto p-1"></div>
+      </section>
+
+      <section class="bg-purple-950/10 border-2 border-dashed border-purple-900/40 rounded-2xl p-4 flex flex-col justify-center min-h-[140px]">
+        <div id="locked-shelf" class="grid grid-cols-4 gap-3 justify-items-center items-center w-full m-auto p-1"></div>
+      </section>
+    </div>
+
+    <div class="w-full mt-4 flex gap-3 shrink-0">
+      <button id="roll-btn" onclick="executeManualRoll()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-comic-heavy text-2xl py-4 rounded-2xl comic-box-lg tracking-wide transform active:translate-y-[2px] active:shadow-[2px_2px_0px_#000000] transition-all">
+        SMASH & ROLL!
+      </button>
+      <div class="bg-zinc-900 border-5 border-black rounded-2xl px-5 flex items-center justify-center font-comic-heavy text-2xl text-yellow-400 shadow-[6px_6px_0px_#000000]">
+        <span>🎲</span><span id="roll-counter-display" class="ml-2">0</span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="w-full p-2 bg-neutral-950 flex justify-center border-t border-neutral-800 mt-auto shrink-0 z-50">
+    <a href="https://ko-fi.com/virtute" target="_blank" class="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-lg border-2 border-black flex items-center gap-2 active:scale-95 transition-all">
+      ☕ Support
+    </a>
+  </footer>
+
+  <script src="gameEngine.js"></script>
+  <script>
+    // Launch default configurations on initialization lifecycle loop
+    buildFreshPool();
+    renderScoreboard();
+  </script>
 </body>
 </html>
