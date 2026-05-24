@@ -32,7 +32,6 @@
     .comic-box-sm { border: 3px solid #000000; box-shadow: 3px 3px 0px #000000; }
     .comic-box-lg { border: 5px solid #000000; box-shadow: 8px 8px 0px #000000; }
 
-    /* Floating Navigation Pill Dock */
     .floating-nav-dock {
       position: fixed;
       top: 16px;
@@ -67,7 +66,7 @@
       </button>
     </div>
     <div class="w-[1px] h-6 bg-zinc-800 mx-2"></div>
-    <button onclick="toggleFullscreen()" class="p-2 text-zinc-400 hover:text-white transition-all active:scale-90" title="Toggle Fullscreen">
+    <button onclick="toggleFullscreen()" class="p-2 text-zinc-400 hover:text-white transition-all active:scale-90">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
       </svg>
@@ -82,11 +81,12 @@
 
     <section class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex flex-col gap-3 shrink-0">
       <span class="font-comic-clean text-xl text-zinc-300 uppercase tracking-wide">How many players?</span>
-      <div class="grid grid-cols-4 gap-2">
-        <button onclick="setSetupPlayerCount(3)" id="btn-count-3" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-xl text-zinc-400 transition-all">3</button>
-        <button onclick="setSetupPlayerCount(4)" id="btn-count-4" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-xl text-zinc-400 transition-all">4</button>
-        <button onclick="setSetupPlayerCount(5)" id="btn-count-5" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-xl text-zinc-400 transition-all">5</button>
-        <button onclick="setSetupPlayerCount(6)" id="btn-count-6" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-xl text-zinc-400 transition-all">6</button>
+      <div class="grid grid-cols-5 gap-1.5">
+        <button onclick="setSetupPlayerCount(2)" id="btn-count-2" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">2</button>
+        <button onclick="setSetupPlayerCount(3)" id="btn-count-3" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">3</button>
+        <button onclick="setSetupPlayerCount(4)" id="btn-count-4" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">4</button>
+        <button onclick="setSetupPlayerCount(5)" id="btn-count-5" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">5</button>
+        <button onclick="setSetupPlayerCount(6)" id="btn-count-6" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">6</button>
       </div>
     </section>
 
@@ -136,9 +136,9 @@
     </a>
   </footer>
 
-  <script src="gameEngine.js"></script>
+  <script src="gameEngine.js?v=2"></script>
   <script>
-    setSetupPlayerCount(3);
+    setSetupPlayerCount(2);
   </script>
 </body>
 </html>
