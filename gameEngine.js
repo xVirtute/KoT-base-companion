@@ -378,61 +378,6 @@ function renderScoreboard() {
     container.innerHTML = gameState.players.map(p => {
         const inCity = p.location === 'tokyo';
         const inHarbor = p.location === 'harbor';
-        
-        // Check if this card belongs to the active player
-        const isActivePlayer = p.id === gameState.activePlayerId;
-        
-        // Show the staging drawer ONLY for the active player if they have an active uncommitted roll
-        const showStagingDrawer = isActivePlayer && !gameState.currentTurnResolved;
-
-        return `
-        <div class="bg-neutral-900 border-2 ${inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-4 rounded-xl flex flex-col gap-3 shadow-[4px_4px_0px_#000000] transition-all duration-200">
-            
-            <div class="flex justify-between items-center w-full">
-                <div class="flex flex-col gap-2 cursor-pointer" onclick="changeActivePlayer(${p.id})">
-                  <div class="flex items-center gap-2">
-                    ${isActivePlayer ? '<span class="text-yellow-400 text-sm animate-pulse">▶</span>' : ''}
-                    <span class="font-bold uppercase text-lg ${p.color}">${p.name}</span>
-                  </div>
-                  <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block -mt-2">${p.monster}</span>
-                  
-                  <div class="flex gap-1.5 mt-1">
-                    <button onclick="toggleLocation(${p.id}, 'tokyo')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inCity ? 'bg-purple-600 border-purple-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
-                      👑 CITY
-                    </button>
-                    ${gameState.harborAvailable ? `
-                      <button onclick="toggleLocation(${p.id}, 'harbor')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inHarbor ? 'bg-sky-600 border-sky-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
-                        ⚓ HARBOR
-                      </button>
-                    ` : ''}
-                  </div>
-                </div>
-                
-                <div class="flex gap-4 text-center">
-                    ${renderStat(p.id, 'hp', p.hp, 'text-red-500')}
-                    ${renderStat(p.id, 'vp', p.vp, 'text-yellow-400')}
-                    ${renderStat(p.id, 'energy', p.energy, 'text-emerald-400')}
-                </div>
-            </div>
-
-            ${showStagingDrawer ? `
-                <div class="mt-2 border-t border-zinc-800 pt-3 flex flex-col gap-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
-                    <div class="text-[11px] font-comic-heavy text-yellow-400 uppercase tracking-wider flex justify-between">
-                        <span>🎲 Staging Area</span>
-                        <span class="text-zinc-500">Tweak for Card Effects</span>
-                    </div>
-                    
-                    <div class="grid grid-cols-4 gap-1 text-center bg-zinc-900/50 p-2 rounded-lg border border-zinc-900">
-                        <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-yellow-400 uppercase">⭐ VP</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.vp}</span>
-function renderScoreboard() {
-    const container = document.getElementById('player-grid');
-    if (!container) return;
-    
-    container.innerHTML = gameState.players.map(p => {
-        const inCity = p.location === 'tokyo';
-        const inHarbor = p.location === 'harbor';
         const isActivePlayer = p.id === gameState.activePlayerId;
         const showStagingDrawer = isActivePlayer && !gameState.currentTurnResolved;
         
@@ -440,10 +385,10 @@ function renderScoreboard() {
         const isEliminated = p.hp <= 0;
 
         return `
-        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-4 rounded-xl flex flex-col gap-3 shadow-[4px_4px_0px_#000000] transition-all duration-200relative">
+        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-4 rounded-xl flex flex-col gap-3 shadow-[4px_4px_0px_#000000] transition-all duration-200 relative">
             
             <div class="flex justify-between items-center w-full">
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-2 cursor-pointer" onclick="changeActivePlayer(${p.id})">
                   <div class="flex items-center gap-2">
                     ${isActivePlayer && !isEliminated ? '<span class="text-yellow-400 text-sm animate-pulse">▶</span>' : ''}
                     <span class="font-bold uppercase text-lg ${isEliminated ? 'text-zinc-600 line-through' : p.color}">${p.name}</span>
@@ -521,7 +466,6 @@ function renderScoreboard() {
         `;
     }).join('');
 }
-
 
 function renderStat(id, stat, value, colorClass) {
     return `
