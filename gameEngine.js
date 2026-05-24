@@ -3,7 +3,10 @@
 // ==========================================
 let gameState = {
     players: [],
-    harborAvailable: false
+    harborAvailable: false,
+    activePlayerId: 0,       // Tracks whose turn it is (defaults to Player 1)
+    currentTurnResolved: true, // Hides the summary card until dice are rolled
+    rolledTotals: { one: 0, two: 0, three: 0, energy: 0, heart: 0, claw: 0 }
 };
 
 let turnRollCount = 0;
