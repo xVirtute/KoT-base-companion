@@ -79,7 +79,7 @@ function initGameFromSetup() {
       color: colorVal,
       hp: 10,
       vp: 0,
-      energy: 0
+      energy: 0,
 location: 'outside'
     });
   });
