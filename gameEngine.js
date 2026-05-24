@@ -103,11 +103,43 @@ function executeManualRoll() {
 // ==========================================
 // 4. UI RENDERING LAYER (View)
 // ==========================================
+// ==========================================
+// GLOBAL FULLSCREEN CONTROLLER
+// ==========================================
+function toggleFullscreen() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
 function showTab(targetTab) {
   document.getElementById('tab-score-view').classList.toggle('hidden', targetTab !== 'score');
   document.getElementById('tab-dice-view').classList.toggle('hidden', targetTab !== 'dice');
-  if (targetTab === 'dice') renderTable();
+  
+  // Style shifts for the new floating dock layout buttons
+  const scoreBtn = document.getElementById('nav-score');
+  const diceBtn = document.getElementById('nav-dice');
+  
+  if (targetTab === 'score') {
+    scoreBtn.className = "flex-1 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-xs uppercase tracking-wider transition-all";
+    diceBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+  } else {
+    scoreBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+    diceBtn.className = "flex-1 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-xs uppercase tracking-wider transition-all";
+    renderTable();
+  }
 }
+
 
 function renderScoreboard() {
     const container = document.getElementById('player-grid');
