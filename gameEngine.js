@@ -11,7 +11,16 @@ let poolSize = 6;
 let diceArray = [];
 let executionLock = false;
 
-const FACES = ['damage', 'destruction', 'energy', 'fame', 'ability', 'health'];
+const FACES = ['one', 'two', 'three', 'energy', 'heart', 'claw'];
+
+const SVG_ASSETS = {
+  one: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-zinc-400 fill-current"><text x="50%" y="75%" text-anchor="middle" font-family="'Luckiest Guy', cursive" font-size="75" stroke="#000" stroke-width="4">1</text></svg>`,
+  two: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-zinc-400 fill-current"><text x="50%" y="75%" text-anchor="middle" font-family="'Luckiest Guy', cursive" font-size="75" stroke="#000" stroke-width="4">2</text></svg>`,
+  three: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-zinc-400 fill-current"><text x="50%" y="75%" text-anchor="middle" font-family="'Luckiest Guy', cursive" font-size="75" stroke="#000" stroke-width="4">3</text></svg>`,
+  energy: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-yellow-400 fill-current"><polygon points="62,8 24,54 52,54 38,92 76,46 48,46" stroke="#000" stroke-width="3"/></svg>`,
+  heart: `<svg viewBox="0 0 100 100" class="w-4/5 h-4/5 text-emerald-500 fill-current"><path d="M50,84 C50,84 14,60 14,36 C14,18 32,10 50,28 C68,10 86,18 86,36 C86,60 50,84 50,84 Z" stroke="#000" stroke-width="4"/></svg>`,
+  claw: `<svg viewBox="0 0 100 100" class="w-5/6 h-5/6 text-red-500 fill-current"><path d="M20,75 C30,50 35,25 25,10 C40,25 45,45 42,65 C52,40 62,20 55,5 C68,20 72,40 65,60 C75,40 88,25 85,10 C92,28 90,48 78,68 C65,85 45,95 20,75 Z" stroke="#000" stroke-width="3"/></svg>`
+};
 
 const MONSTERS = ["Gigazaur", "Kraken", "The King", "Cyber Bunny", "Alienoid", "Meka Dragon"];
 const THEME_COLORS = [
