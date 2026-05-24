@@ -417,6 +417,14 @@ function changePlayerToken(playerId, tokenType, amount) {
   renderScoreboard();
 }
 
+// NEW: Toggles the visibility of a player's status effect tray
+function toggleStatusDrawer(playerId) {
+  const player = gameState.players.find(p => p.id === playerId);
+  if (!player) return;
+  
+  player.showStatusDrawer = !player.showStatusDrawer;
+  renderScoreboard();
+}
 
 // ==========================================
 // 4. DICE ENGINE LOGIC
@@ -515,6 +523,17 @@ function executeManualRoll() {
 // ==========================================
 // 5. UI RENDERING LAYER (View)
 // ==========================================
+
+// Premium Vector Asset Repository for Card Statuses
+const STATUS_ICONS = {
+  zombie: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current text-emerald-400"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
+  armor: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current text-amber-500"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>`,
+  mimic: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current text-indigo-400"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.2c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.22 19.53 10.57 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>`,
+  poison: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current text-lime-500"><path d="M12 2c-4.2 0-7 3.22-7 7.5 0 3.12 1.68 5.4 3.44 6.78.43.34.56.94.28 1.41l-1.07 1.79c-.27.45-.11 1.04.34 1.31.45.27 1.04.11 1.31-.34l.87-1.46c.54.14 1.14.22 1.83.22s1.29-.08 1.83-.22l.87 1.46c.27.45.86.61 1.31.34.45-.27.61-.86.34-1.31l-1.07-1.79c-.28-.47-.15-1.07.28-1.41C19.32 14.9 21 12.62 21 9.5 21 5.22 18.2 2 12 2z"/></svg>`,
+  shrink: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current text-sky-400"><path d="M10.5 4v2.5l2.25-2.25L15 6.5 10.5 11l-4.5-4.5 2.25-2.25L10.5 4zm3 16v-2.5l-2.25 2.25L9 17.5l4.5-4.5 4.5 4.5-2.25 2.25L13.5 20zM4 10.5h2.5l-2.25 2.25L6.5 15l-4.5-4.5 4.5-4.5-2.25 2.25L4 10.5zm16 3h-2.5l2.25-2.25L17.5 9l4.5 4.5-4.5 4.5 2.25-2.25L20 13.5z"/></svg>`,
+  smoke: `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-current text-zinc-400"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>`
+};
+
 function showTab(targetTab) {
   document.getElementById('tab-score-view').classList.toggle('hidden', targetTab !== 'score');
   document.getElementById('tab-dice-view').classList.toggle('hidden', targetTab !== 'dice');
@@ -531,6 +550,7 @@ function showTab(targetTab) {
     renderTable();
   }
 }
+
 function renderScoreboard() {
     const container = document.getElementById('player-grid');
     if (!container) return;
@@ -541,7 +561,6 @@ function renderScoreboard() {
         const isActivePlayer = p.id === gameState.activePlayerId;
         const showStagingDrawer = isActivePlayer && !gameState.currentTurnResolved;
         
-        // Unpack status & token models safely
         const isZombie = p.statuses?.zombie || false;
         const hasArmor = p.statuses?.armor || false;
         
@@ -551,112 +570,135 @@ function renderScoreboard() {
         const hasMimic = p.tokens?.mimic || false;
         
         const isEliminated = p.hp <= 0 && !isZombie;
+        const isDrawerOpen = p.showStatusDrawer || false;
+
+        // Build a low-profile inline list of active status previews for the main view
+        let activePreviewsHtml = '';
+        if (!isEliminated) {
+          if (isZombie) activePreviewsHtml += `<div class="bg-emerald-950/80 p-1 rounded-md border border-emerald-800">${STATUS_ICONS.zombie}</div>`;
+          if (hasArmor) activePreviewsHtml += `<div class="bg-amber-950/80 p-1 rounded-md border border-amber-800">${STATUS_ICONS.armor}</div>`;
+          if (hasMimic) activePreviewsHtml += `<div class="bg-indigo-950/80 p-1 rounded-md border border-indigo-800">${STATUS_ICONS.mimic}</div>`;
+          if (poisonCount > 0) activePreviewsHtml += `<div class="bg-zinc-950 p-1 rounded-md border border-zinc-800 flex items-center gap-1 text-[10px] text-lime-400 font-black">${STATUS_ICONS.poison}<span>${poisonCount}</span></div>`;
+          if (shrinkCount > 0) activePreviewsHtml += `<div class="bg-zinc-950 p-1 rounded-md border border-zinc-800 flex items-center gap-1 text-[10px] text-sky-400 font-black">${STATUS_ICONS.shrink}<span>${shrinkCount}</span></div>`;
+          if (smokeCount > 0) activePreviewsHtml += `<div class="bg-zinc-950 p-1 rounded-md border border-zinc-800 flex items-center gap-1 text-[10px] text-zinc-400 font-black">${STATUS_ICONS.smoke}<span>${smokeCount}</span></div>`;
+        }
 
         return `
-        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-4 rounded-xl flex flex-col gap-3 shadow-[4px_4px_0px_#000000] transition-all duration-200 relative">
+        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-3.5 rounded-2xl flex flex-col gap-2 shadow-[4px_4px_0px_#000000] transition-all duration-200 relative">
             
-            <div class="flex justify-between items-center w-full">
-                <div class="flex flex-col gap-2 cursor-pointer" onclick="changeActivePlayer(${p.id})">
-                  <div class="flex items-center gap-2">
-                    ${isActivePlayer && !isEliminated ? '<span class="text-yellow-400 text-sm animate-pulse">▶</span>' : ''}
-                    <span class="font-bold uppercase text-lg ${isEliminated ? 'text-zinc-600 line-through' : p.color}">${p.name}</span>
-                    ${isZombie ? '<span class="bg-emerald-950 border border-emerald-800 text-[9px] font-comic-heavy text-emerald-400 px-1.5 py-0.5 rounded ml-2 tracking-wide">🧟 ZOMBIE</span>' : isEliminated ? '<span class="bg-red-950 border border-red-800 text-[9px] font-comic-heavy text-red-400 px-1.5 py-0.5 rounded ml-2 tracking-wide">💀 SMASHED</span>' : ''}
-                    ${hasMimic ? '<span class="bg-indigo-950 border border-indigo-800 text-[9px] font-comic-heavy text-indigo-400 px-1.5 py-0.5 rounded tracking-wide">🧬 MIMIC</span>' : ''}
+            <div class="flex justify-between items-start w-full gap-2">
+                <div class="flex flex-col cursor-pointer flex-1" onclick="changeActivePlayer(${p.id})">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    ${isActivePlayer && !isEliminated ? '<span class="text-yellow-400 text-xs animate-pulse">▶</span>' : ''}
+                    <span class="font-comic-heavy uppercase text-base tracking-wide ${isEliminated ? 'text-zinc-600 line-through' : p.color}">${p.name}</span>
+                    ${isEliminated ? '<span class="bg-red-950 border border-red-800 text-[8px] font-black text-red-400 px-1.5 py-0.5 rounded tracking-wide">💀 SMASHED</span>' : ''}
                   </div>
-                  <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block -mt-2">${p.monster}</span>
-                  
-                  <div class="flex gap-1.5 mt-1 ${isEliminated ? 'invisible' : ''}">
-                    <button onclick="toggleLocation(${p.id}, 'tokyo')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inCity ? 'bg-purple-600 border-purple-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
-                      👑 CITY
-                    </button>
-                    ${gameState.harborAvailable ? `
-                      <button onclick="toggleLocation(${p.id}, 'harbor')" class="px-2 py-1 rounded text-[11px] font-comic-heavy tracking-wide transition-all border ${inHarbor ? 'bg-sky-600 border-sky-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">
-                        ⚓ HARBOR
-                      </button>
-                    ` : ''}
-                  </div>
-
-                  <div class="flex gap-1.5 mt-1 ${isEliminated ? 'hidden' : ''}">
-                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'zombie')" class="px-1.5 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${isZombie ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
-                      🧟 ZOMBIE
-                    </button>
-                    <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'armor')" class="px-1.5 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${hasArmor ? 'bg-amber-600 border-amber-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
-                      🛡️ ARMOR
-                    </button>
-                    <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'mimic', 0)" class="px-1.5 py-0.5 rounded text-[9px] font-comic-heavy tracking-wide border transition-all ${hasMimic ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}">
-                      🧬 MIMIC
-                    </button>
-                  </div>
-
-                  <div class="flex flex-wrap gap-2 mt-2 pt-1.5 border-t border-zinc-900 ${isEliminated ? 'hidden' : ''}">
-                    <div class="flex items-center bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800 gap-1.5">
-                      <span class="text-[10px] font-bold text-green-400">🤢</span>
-                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'poison', -1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">-</button>
-                      <span class="text-xs font-black text-zinc-200 min-w-[10px] text-center">${poisonCount}</span>
-                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'poison', 1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">+</button>
-                    </div>
-
-                    <div class="flex items-center bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800 gap-1.5">
-                      <span class="text-[10px] font-bold text-sky-400">🌀</span>
-                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'shrink', -1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">-</button>
-                      <span class="text-xs font-black text-zinc-200 min-w-[10px] text-center">${shrinkCount}</span>
-                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'shrink', 1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">+</button>
-                    </div>
-
-                    <div class="flex items-center bg-zinc-950 px-2 py-0.5 rounded-lg border border-zinc-800 gap-1.5">
-                      <span class="text-[10px] font-bold text-zinc-400">💨</span>
-                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'smoke', -1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">-</button>
-                      <span class="text-xs font-black text-zinc-200 min-w-[10px] text-center">${smokeCount}</span>
-                      <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'smoke', 1)" class="text-zinc-600 hover:text-zinc-400 font-bold text-xs px-1">+</button>
-                    </div>
-                  </div>
+                  <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mt-0.5">${p.monster}</span>
                 </div>
                 
-                <div class="flex gap-4 text-center">
+                <div class="flex gap-2.5 text-center shrink-0">
                     ${renderStat(p.id, 'hp', p.hp, 'text-red-500')}
                     ${renderStat(p.id, 'vp', p.vp, 'text-yellow-400')}
                     ${renderStat(p.id, 'energy', p.energy, 'text-emerald-400')}
                 </div>
             </div>
 
+            <div class="flex items-center justify-between gap-2 border-t border-zinc-800/60 pt-2 ${isEliminated ? 'hidden' : ''}">
+                <div class="flex gap-1">
+                    <button onclick="toggleLocation(${p.id}, 'tokyo')" class="px-2.5 py-1 rounded-lg text-[10px] font-comic-heavy tracking-wide transition-all border ${inCity ? 'bg-purple-600 border-purple-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}">
+                      👑 CITY
+                    </button>
+                    ${gameState.harborAvailable ? `
+                      <button onclick="toggleLocation(${p.id}, 'harbor')" class="px-2.5 py-1 rounded-lg text-[10px] font-comic-heavy tracking-wide transition-all border ${inHarbor ? 'bg-sky-600 border-sky-400 text-white animate-pulse' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}">
+                        ⚓ HARBOR
+                      </button>
+                    ` : ''}
+                </div>
+
+                <button onclick="event.stopPropagation(); toggleStatusDrawer(${p.id})" class="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800/80 hover:border-zinc-700 transition-all max-w-[60%] overflow-hidden">
+                    <div class="flex gap-1 overflow-hidden">
+                        ${activePreviewsHtml || '<span class="text-[9px] font-bold text-zinc-600 uppercase px-1">No Effects</span>'}
+                    </div>
+                    <span class="text-zinc-500 font-black text-[10px] px-1 select-none border-l border-zinc-800/80">${isDrawerOpen ? '▲' : '▼'}</span>
+                </button>
+            </div>
+
+            ${isDrawerOpen && !isEliminated ? `
+                <div class="flex flex-col gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-800/80 animate-fade-in mt-0.5">
+                    
+                    <div class="grid grid-cols-3 gap-1 text-center font-bold text-[9px] tracking-tight">
+                        <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'zombie')" class="py-1.5 rounded-lg border flex items-center justify-center gap-1 transition-all ${isZombie ? 'bg-emerald-600 border-emerald-400 text-white shadow-sm' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}" style="content-visibility: auto">
+                          ${STATUS_ICONS.zombie} ZOMBIE
+                        </button>
+                        <button onclick="event.stopPropagation(); togglePlayerStatus(${p.id}, 'armor')" class="py-1.5 rounded-lg border flex items-center justify-center gap-1 transition-all ${hasArmor ? 'bg-amber-600 border-amber-400 text-white shadow-sm' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}" style="content-visibility: auto">
+                          ${STATUS_ICONS.armor} ARMOR
+                        </button>
+                        <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'mimic', 0)" class="py-1.5 rounded-lg border flex items-center justify-center gap-1 transition-all ${hasMimic ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}" style="content-visibility: auto">
+                          ${STATUS_ICONS.mimic} MIMIC
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1 text-center mt-0.5">
+                        <div class="flex items-center justify-between bg-zinc-900 rounded-lg py-1 px-2 border border-zinc-800/60">
+                          ${STATUS_ICONS.poison}
+                          <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'poison', -1)" class="text-zinc-500 font-black text-sm px-1 select-none">-</button>
+                          <span class="text-xs font-black text-zinc-200">${poisonCount}</span>
+                          <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'poison', 1)" class="text-zinc-500 font-black text-sm px-1 select-none">+</button>
+                        </div>
+                        <div class="flex items-center justify-between bg-zinc-900 rounded-lg py-1 px-2 border border-zinc-800/60">
+                          ${STATUS_ICONS.shrink}
+                          <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'shrink', -1)" class="text-zinc-500 font-black text-sm px-1 select-none">-</button>
+                          <span class="text-xs font-black text-zinc-200">${shrinkCount}</span>
+                          <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'shrink', 1)" class="text-zinc-500 font-black text-sm px-1 select-none">+</button>
+                        </div>
+                        <div class="flex items-center justify-between bg-zinc-900 rounded-lg py-1 px-2 border border-zinc-800/60">
+                          ${STATUS_ICONS.smoke}
+                          <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'smoke', -1)" class="text-zinc-500 font-black text-sm px-1 select-none">-</button>
+                          <span class="text-xs font-black text-zinc-200">${smokeCount}</span>
+                          <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'smoke', 1)" class="text-zinc-500 font-black text-sm px-1 select-none">+</button>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+
             ${showStagingDrawer && !isEliminated ? `
-                <div class="mt-2 border-t border-zinc-800 pt-3 flex flex-col gap-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
-                    <div class="text-[11px] font-comic-heavy text-yellow-400 uppercase tracking-wider flex justify-between">
+                <div class="mt-1.5 border-t border-zinc-800 pt-2.5 flex flex-col gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
+                    <div class="text-[10px] font-comic-heavy text-yellow-400 uppercase tracking-wider flex justify-between px-0.5">
                         <span>🎲 Staging Area</span>
                         <span class="text-zinc-500">Tweak for Card Effects</span>
                     </div>
                     
-                    <div class="grid grid-cols-4 gap-1 text-center bg-zinc-900/50 p-2 rounded-lg border border-zinc-900">
+                    <div class="grid grid-cols-4 gap-1 text-center bg-zinc-900/40 p-1.5 rounded-lg border border-zinc-900">
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-yellow-400 uppercase">⭐ VP</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.vp}</span>
-                            <div class="flex gap-1.5">
-                                <button onclick="tweakStaging('vp', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
-                                <button onclick="tweakStaging('vp', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
+                            <span class="text-[8px] font-black text-yellow-400 uppercase">⭐ VP</span>
+                            <span class="text-lg font-black text-white">${gameState.turnStaging.vp}</span>
+                            <div class="flex gap-1 mt-0.5">
+                                <button onclick="tweakStaging('vp', -1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">-</button>
+                                <button onclick="tweakStaging('vp', 1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">+</button>
                             </div>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-red-500 uppercase">💚 HP</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.hp}</span>
-                            <div class="flex gap-1.5">
-                                <button onclick="tweakStaging('hp', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
-                                <button onclick="tweakStaging('hp', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
+                            <span class="text-[8px] font-black text-red-500 uppercase">💚 HP</span>
+                            <span class="text-lg font-black text-white">${gameState.turnStaging.hp}</span>
+                            <div class="flex gap-1 mt-0.5">
+                                <button onclick="tweakStaging('hp', -1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">-</button>
+                                <button onclick="tweakStaging('hp', 1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">+</button>
                             </div>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-emerald-400 uppercase">⚡ ENG</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.energy}</span>
-                            <div class="flex gap-1.5">
-                                <button onclick="tweakStaging('energy', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
-                                <button onclick="tweakStaging('energy', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
+                            <span class="text-[8px] font-black text-emerald-400 uppercase">⚡ ENG</span>
+                            <span class="text-lg font-black text-white">${gameState.turnStaging.energy}</span>
+                            <div class="flex gap-1 mt-0.5">
+                                <button onclick="tweakStaging('energy', -1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">-</button>
+                                <button onclick="tweakStaging('energy', 1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">+</button>
                             </div>
                         </div>
                         <div class="flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-orange-500 uppercase">💥 DMG</span>
-                            <span class="text-xl font-black text-white py-0.5">${gameState.turnStaging.damage}</span>
-                            <div class="flex gap-1.5">
-                                <button onclick="tweakStaging('damage', -1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">-</button>
-                                <button onclick="tweakStaging('damage', 1)" class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-300 font-bold">+</button>
+                            <span class="text-[8px] font-black text-orange-500 uppercase">💥 DMG</span>
+                            <span class="text-lg font-black text-white">${gameState.turnStaging.damage}</span>
+                            <div class="flex gap-1 mt-0.5">
+                                <button onclick="tweakStaging('damage', -1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">-</button>
+                                <button onclick="tweakStaging('damage', 1)" class="bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] text-zinc-300 font-bold">+</button>
                             </div>
                         </div>
                     </div>
@@ -673,12 +715,12 @@ function renderScoreboard() {
 
 function renderStat(id, stat, value, colorClass) {
     return `
-        <div class="flex flex-col items-center w-14">
-            <span class="text-[9px] uppercase tracking-wider ${colorClass}/70 font-bold">${stat}</span>
-            <span class="text-2xl font-black ${colorClass}">${value}</span>
-            <div class="flex gap-2 mt-1">
-                <button onclick="changeScoreStat(${id}, '${stat}', -1)" class="bg-neutral-800 border border-black px-2 py-0.5 rounded text-xs select-none">-</button>
-                <button onclick="changeScoreStat(${id}, '${stat}', 1)" class="bg-neutral-800 border border-black px-2 py-0.5 rounded text-xs select-none">+</button>
+        <div class="flex flex-col items-center w-11">
+            <span class="text-[8px] uppercase tracking-wider ${colorClass}/70 font-black">${stat}</span>
+            <span class="text-xl font-black ${colorClass} leading-none my-0.5">${value}</span>
+            <div class="flex gap-1 mt-0.5">
+                <button onclick="changeScoreStat(${id}, '${stat}', -1)" class="bg-neutral-800 border border-black px-1.5 py-0.5 rounded text-[10px] font-bold select-none leading-none">-</button>
+                <button onclick="changeScoreStat(${id}, '${stat}', 1)" class="bg-neutral-800 border border-black px-1.5 py-0.5 rounded text-[10px] font-bold select-none leading-none">+</button>
             </div>
         </div>
     `;
@@ -699,7 +741,7 @@ function renderTable() {
 function generateDieMarkup(die) {
   const block = document.createElement('button');
   let componentClasses = "aspect-square w-full max-w-[85px] rounded-2xl bg-zinc-800 border-4 border-zinc-700 flex items-center justify-center p-2 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all duration-75 ";
-  if (die.held) componentClasses += "held-style";
+  if (die.held) block.classList.add('bg-zinc-900', 'border-emerald-500/80');
   block.className = componentClasses;
   if (die.isShuffling) block.classList.add('animate-tumble');
   block.onclick = () => toggleLockState(die.id);
