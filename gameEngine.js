@@ -83,7 +83,6 @@ function initGameFromSetup() {
       energy: 0
     });
   });
-
   gameState.harborAvailable = gameState.players.length >= 5;
 
   document.getElementById('tab-setup-view').classList.add('hidden');
