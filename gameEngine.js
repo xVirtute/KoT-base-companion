@@ -51,7 +51,7 @@ const THEME_COLORS = [
 // ==========================================
 // 2. SETUP SCREEN CONTROLLER LOGIC
 // ==========================================
-let chosenPlayerCount = 4; // Track internally to manage automated rule changes
+let chosenPlayerCount = 4; // Fallback default tracker
 
 function setSetupPlayerCount(count) {
   chosenPlayerCount = count;
@@ -62,7 +62,7 @@ function setSetupPlayerCount(count) {
   const activeBtn = document.getElementById(`btn-count-${count}`);
   if (activeBtn) activeBtn.className = "setup-count-btn bg-yellow-400 border-2 border-black py-2 rounded-xl font-comic-heavy text-lg text-neutral-950 scale-105 shadow-md transition-all";
 
-  // AUTOMATION RULE: Official rules mandate Tokyo Harbor is active for 5-6 players
+  // Automated Rule: Tokyo Harbor auto-toggles for 5-6 player environments
   const harborToggle = document.getElementById('setup-toggle-harbor');
   if (harborToggle) {
     harborToggle.checked = (count >= 5);
@@ -91,13 +91,24 @@ function setSetupPlayerCount(count) {
 
 function commitSetupAndStart() {
   const playersArray = [];
+  const rosterContainer = document.getElementById('setup-players-roster');
+  if (!rosterContainer) return;
+
+  // 🔍 DYNAMIC SCAN: Count exactly how many name fields are physically on the screen
+  const totalRenderedInputs = rosterContainer.querySelectorAll('input[id^="setup-name-"]').length;
   
-  for (let i = 0; i < chosenPlayerCount; i++) {
+  if (totalRenderedInputs === 0) {
+    alert("⚠️ The roster looks empty. Please click a player count button first!");
+    return;
+  }
+
+  for (let i = 0; i < totalRenderedInputs; i++) {
     const nameInput = document.getElementById(`setup-name-${i}`);
     const monsterSelect = document.getElementById(`setup-monster-${i}`);
     const colorSelect = document.getElementById(`setup-color-${i}`);
     
-    if (!nameInput) return;
+    // Defensive check: skip if any row element got clipped out
+    if (!nameInput || !monsterSelect || !colorSelect) continue;
 
     playersArray.push({
       id: i,
@@ -108,13 +119,13 @@ function commitSetupAndStart() {
       vp: 0,
       energy: 0,
       location: 'outside',
-      showStatusDrawer: false, // Drawer starts cleanly shut
+      showStatusDrawer: false, 
       statuses: { zombie: false, armor: false },
       tokens: { poison: 0, shrink: 0, smoke: 0, mimic: false }
     });
   }
 
-  // Set rules based on your setup panel toggles
+  // Safe configurations check
   const harborToggle = document.getElementById('setup-toggle-harbor');
   gameState.harborAvailable = harborToggle ? harborToggle.checked : false;
 
@@ -122,9 +133,12 @@ function commitSetupAndStart() {
   gameState.activePlayerId = 0;
   gameState.currentTurnResolved = true;
 
-  // Swap UI views
+  // Swap layout view layers safely
   document.getElementById('tab-setup-view').classList.add('hidden');
-  document.getElementById('main-nav').classList.remove('hidden');
+  
+  const mainNav = document.getElementById('main-nav');
+  if (mainNav) mainNav.classList.remove('hidden');
+
   showTab('score');
   renderScoreboard();
 }
