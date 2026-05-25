@@ -27,15 +27,26 @@ const SVG_ASSETS = {
   claw: `<svg viewBox="0 0 100 100" class="w-5/6 h-5/6 text-red-500 fill-current"><path d="M20,75 C30,50 35,25 25,10 C40,25 45,45 42,65 C52,40 62,20 55,5 C68,20 72,40 65,60 C75,40 88,25 85,10 C92,28 90,48 78,68 C65,85 45,95 20,75 Z" stroke="#000" stroke-width="3"/></svg>`
 };
 
-const MONSTERS = ["Gigazaur", "Kraken", "The King", "Cyber Bunny", "Alienoid", "Meka Dragon"];
+const MONSTERS = [
+  "Gigazaur", "Kraken", "The King", "Cyber Bunny", "Alienoid", "Meka Dragon",
+  "Space Penguin", "Cybertooth", "Pandakai", "Pumpkin Jack", "Cthulhu", "King Kong", "Anubis", "Boogie Woogie"
+];
+
 const THEME_COLORS = [
   { name: "Red", class: "text-red-500" },
   { name: "Yellow", class: "text-yellow-400" },
   { name: "Emerald", class: "text-emerald-400" },
   { name: "Blue", class: "text-blue-400" },
   { name: "Purple", class: "text-purple-400" },
-  { name: "Orange", class: "text-orange-500" }
+  { name: "Orange", class: "text-orange-500" },
+  { name: "Cyan", class: "text-cyan-400" },
+  { name: "Pink", class: "text-pink-500" },
+  { name: "Indigo", class: "text-indigo-400" },
+  { name: "Lime", class: "text-lime-400" },
+  { name: "Rose", class: "text-rose-500" },
+  { name: "Violet", class: "text-violet-400" }
 ];
+
 
 // ==========================================
 // 2. SETUP SCREEN CONTROLLER LOGIC
