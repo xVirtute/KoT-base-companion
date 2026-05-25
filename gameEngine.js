@@ -88,6 +88,7 @@ function setSetupPlayerCount(count) {
     </div>
   `).join('');
 }
+function initGameFromSetup() { commitSetupAndStart(); }
 
 function commitSetupAndStart() {
   // 🚨 DIAGNOSTIC LEVEL 1: Confirming the button click actually runs this code
