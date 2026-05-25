@@ -91,12 +91,9 @@ function setSetupPlayerCount(count) {
 function initGameFromSetup() { commitSetupAndStart(); }
 
 function commitSetupAndStart() {
-  // 🚨 DIAGNOSTIC LEVEL 1: Confirming the button click actually runs this code
-  alert("🚀 Start button successfully clicked! Scanning roster...");
-
   const rosterContainer = document.getElementById('setup-players-roster');
   if (!rosterContainer) {
-    alert("⚠️ Error: App could not find an HTML element with the ID 'setup-players-roster'.");
+    
     return;
   }
 
