@@ -51,12 +51,22 @@ const THEME_COLORS = [
 // ==========================================
 // 2. SETUP SCREEN CONTROLLER LOGIC
 // ==========================================
+let chosenPlayerCount = 4; // Track internally to manage automated rule changes
+
 function setSetupPlayerCount(count) {
+  chosenPlayerCount = count;
+  
   document.querySelectorAll('.setup-count-btn').forEach(btn => {
     btn.className = "setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all";
   });
   const activeBtn = document.getElementById(`btn-count-${count}`);
   if (activeBtn) activeBtn.className = "setup-count-btn bg-yellow-400 border-2 border-black py-2 rounded-xl font-comic-heavy text-lg text-neutral-950 scale-105 shadow-md transition-all";
+
+  // AUTOMATION RULE: Official rules mandate Tokyo Harbor is active for 5-6 players
+  const harborToggle = document.getElementById('setup-toggle-harbor');
+  if (harborToggle) {
+    harborToggle.checked = (count >= 5);
+  }
 
   const rosterContainer = document.getElementById('setup-players-roster');
   if (!rosterContainer) return;
@@ -79,35 +89,46 @@ function setSetupPlayerCount(count) {
   `).join('');
 }
 
-function initGameFromSetup() {
-  const inputs = document.querySelectorAll('[id^="setup-name-"]');
-  gameState.players = [];
+function commitSetupAndStart() {
+  const playersArray = [];
   
-  inputs.forEach((_, i) => {
-    const nameVal = document.getElementById(`setup-name-${i}`).value.trim();
-    const monsterVal = document.getElementById(`setup-monster-${i}`).value;
-    const colorVal = document.getElementById(`setup-color-${i}`).value;
+  for (let i = 0; i < chosenPlayerCount; i++) {
+    const nameInput = document.getElementById(`setup-name-${i}`);
+    const monsterSelect = document.getElementById(`setup-monster-${i}`);
+    const colorSelect = document.getElementById(`setup-color-${i}`);
+    
+    if (!nameInput) return;
 
-    gameState.players.push({
+    playersArray.push({
       id: i,
-      name: nameVal || monsterVal.toUpperCase(),
-      monster: monsterVal,
-      color: colorVal,
+      name: nameInput.value.trim() || `Player ${i + 1}`,
+      monster: monsterSelect.value,
+      color: colorSelect.value,
       hp: 10,
       vp: 0,
       energy: 0,
-location: 'outside'
+      location: 'outside',
+      showStatusDrawer: false, // Drawer starts cleanly shut
+      statuses: { zombie: false, armor: false },
+      tokens: { poison: 0, shrink: 0, smoke: 0, mimic: false }
     });
-  });
-  gameState.harborAvailable = gameState.players.length >= 5;
+  }
 
+  // Set rules based on your setup panel toggles
+  const harborToggle = document.getElementById('setup-toggle-harbor');
+  gameState.harborAvailable = harborToggle ? harborToggle.checked : false;
+
+  gameState.players = playersArray;
+  gameState.activePlayerId = 0;
+  gameState.currentTurnResolved = true;
+
+  // Swap UI views
   document.getElementById('tab-setup-view').classList.add('hidden');
   document.getElementById('main-nav').classList.remove('hidden');
-  
-  buildFreshPool();
-  renderScoreboard();
   showTab('score');
+  renderScoreboard();
 }
+
 
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
