@@ -90,24 +90,28 @@ function setSetupPlayerCount(count) {
 }
 
 function commitSetupAndStart() {
-  const playersArray = [];
-  const rosterContainer = document.getElementById('setup-players-roster');
-  if (!rosterContainer) return;
+  // 🚨 DIAGNOSTIC LEVEL 1: Confirming the button click actually runs this code
+  alert("🚀 Start button successfully clicked! Scanning roster...");
 
-  // 🔍 DYNAMIC SCAN: Count exactly how many name fields are physically on the screen
-  const totalRenderedInputs = rosterContainer.querySelectorAll('input[id^="setup-name-"]').length;
-  
-  if (totalRenderedInputs === 0) {
-    alert("⚠️ The roster looks empty. Please click a player count button first!");
+  const rosterContainer = document.getElementById('setup-players-roster');
+  if (!rosterContainer) {
+    alert("⚠️ Error: App could not find an HTML element with the ID 'setup-players-roster'.");
     return;
   }
 
+  const totalRenderedInputs = rosterContainer.querySelectorAll('input[id^="setup-name-"]').length;
+  
+  if (totalRenderedInputs === 0) {
+    alert("⚠️ Scan complete: The roster container is empty. Make sure to click a player count button first!");
+    return;
+  }
+
+  const playersArray = [];
   for (let i = 0; i < totalRenderedInputs; i++) {
     const nameInput = document.getElementById(`setup-name-${i}`);
     const monsterSelect = document.getElementById(`setup-monster-${i}`);
     const colorSelect = document.getElementById(`setup-color-${i}`);
     
-    // Defensive check: skip if any row element got clipped out
     if (!nameInput || !monsterSelect || !colorSelect) continue;
 
     playersArray.push({
@@ -125,7 +129,6 @@ function commitSetupAndStart() {
     });
   }
 
-  // Safe configurations check
   const harborToggle = document.getElementById('setup-toggle-harbor');
   gameState.harborAvailable = harborToggle ? harborToggle.checked : false;
 
@@ -133,8 +136,13 @@ function commitSetupAndStart() {
   gameState.activePlayerId = 0;
   gameState.currentTurnResolved = true;
 
-  // Swap layout view layers safely
-  document.getElementById('tab-setup-view').classList.add('hidden');
+  // 🚨 DIAGNOSTIC LEVEL 2: Confirming layout transformation
+  const setupView = document.getElementById('tab-setup-view');
+  if (setupView) {
+    setupView.classList.add('hidden');
+  } else {
+    alert("⚠️ Warning: Could not find HTML element 'tab-setup-view' to hide the menu.");
+  }
   
   const mainNav = document.getElementById('main-nav');
   if (mainNav) mainNav.classList.remove('hidden');
@@ -142,6 +150,11 @@ function commitSetupAndStart() {
   showTab('score');
   renderScoreboard();
 }
+
+// 🌐 THE ALIAS BLANKET: Catches whatever click handler name your HTML button is using
+function startGame() { commitSetupAndStart(); }
+function setupComplete() { commitSetupAndStart(); }
+function startMatch() { commitSetupAndStart(); }
 
 
 // ==========================================
