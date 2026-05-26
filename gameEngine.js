@@ -47,86 +47,6 @@ const THEME_COLORS = [
   { name: "Violet", class: "text-violet-400" }
 ];
 
-
-
-
-// ==========================================
-// 2. SETUP SCREEN CONTROLLER LOGIC
-// ==========================================
-let chosenPlayerCount = 4;
-
-function setSetupPlayerCount(count) {
-  chosenPlayerCount = count;
-  
-  document.querySelectorAll('.setup-count-btn').forEach(btn => {
-    btn.className = "setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all";
-  });
-  const activeBtn = document.getElementById(`btn-count-${count}`);
-  if (activeBtn) activeBtn.className = "setup-count-btn bg-yellow-400 border-2 border-black py-2 rounded-xl font-comic-heavy text-lg text-neutral-950 scale-105 shadow-md transition-all";
-
-  const harborToggle = document.getElementById('setup-toggle-harbor');
-  if (harborToggle) harborToggle.checked = (count >= 5);
-
-  const rosterContainer = document.getElementById('setup-players-roster');
-  if (!rosterContainer) return;
-
-  rosterContainer.innerHTML = Array.from({ length: count }).map((_, i) => `
-    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-2xl flex flex-col gap-2 transition-all">
-      <div class="flex items-center gap-2">
-        <span class="font-comic-heavy text-zinc-500 text-sm">#${i + 1}</span>
-        <input type="text" id="setup-name-${i}" placeholder="Player Name" value="Player ${i + 1}" class="flex-1 bg-black border border-zinc-800 px-3 py-1.5 rounded-xl font-sans text-sm focus:outline-none focus:border-yellow-400 text-zinc-200">
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <select id="setup-monster-${i}" onchange="checkCustomMonsterToggle(${i})" class="bg-zinc-950 border border-zinc-800 px-2 py-1.5 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none">
-          ${MONSTERS.map((m, idx) => `<option value="${m}" ${idx === i ? 'selected' : ''}>${m}</option>`).join('')}
-          <option value="CUSTOM_CHOICE">✍️ -- Custom Monster --</option>
-        </select>
-        <select id="setup-color-${i}" class="bg-zinc-950 border border-zinc-800 px-2 py-1.5 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none">
-          ${THEME_COLORS.map((c, idx) => `<option value="${c.class}" ${idx === i ? 'selected' : ''}>${c.name} Style</option>`).join('')}
-        </select>
-      </div>
-      <input type="text" id="setup-custom-text-${i}" placeholder="Enter Custom Monster Name..." class="hidden bg-zinc-950 border border-purple-900/60 text-purple-300 px-3 py-1.5 rounded-xl font-sans text-xs focus:outline-none focus:border-purple-500 animate-fade-in">
-    </div>
-  `).join('');
-}
-
-// NEW: Reveals text row if "Custom Monster" dropdown index is hit
-function checkCustomMonsterToggle(index) {
-  const selection = document.getElementById(`setup-monster-${index}`).value;
-  const customInput = document.getElementById(`setup-custom-text-${index}`);
-  if (customInput) {
-    customInput.classList.toggle('hidden', selection !== 'CUSTOM_CHOICE');
-    if (selection === 'CUSTOM_CHOICE') customInput.focus();
-  }
-}
-
- === 'CUSTOM_CHOICE' && customTextInput) {
-      chosenMonsterName = customTextInput.value.trim() || "Unknown Beast";
-function commitSetupAndStart() {
-  const playersArray = [];
-  const rosterContainer = document.getElementById('setup-players-roster');
-  if (!rosterContainer) return;
-
-  const totalRenderedInputs = rosterContainer.querySelectorAll('input[id^="setup-name-"]').length;
-  if (totalRenderedInputs === 0) return;
-
-  for (let i = 0; i < totalRenderedInputs; i++) {
-    const nameInput = document.getElementById(`setup-name-${i}`);
-    const monsterSelect = document.getElementById(`setup-monster-${i}`);
-    const colorSelect = document.getElementById(`setup-color-${i}`);
-    const customTextInput = document.getElementById(`setup-custom-text-${i}`);
-    
-    if (!nameInput || !monsterSelect || !colorSelect) continue;
-
-    // Determine final character branding choice
-    let chosenMonsterName = monsterSelect.value;
-    if (chosenMonsterName === 'CUSTOM_CHOICE' && customTextInput) {
-      chosenMonsterName = customTextInput.value.trim() || "Unknown Beast";
-    }
-
-    playersArray.push({
-      id: i,
-      name: nameInput.value.trim() || `Player ${i + 1}`,
 // ==========================================
 // 2. SETUP SCREEN CONTROLLER LOGIC
 // ==========================================
@@ -271,7 +191,6 @@ function localStorageWipeFresh() {
   document.getElementById('resume-modal').classList.add('hidden');
   setSetupPlayerCount(2);
 }
-
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
 // ==========================================
