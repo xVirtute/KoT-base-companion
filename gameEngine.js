@@ -100,6 +100,8 @@ function checkCustomMonsterToggle(index) {
   }
 }
 
+ === 'CUSTOM_CHOICE' && customTextInput) {
+      chosenMonsterName = customTextInput.value.trim() || "Unknown Beast";
 function commitSetupAndStart() {
   const playersArray = [];
   const rosterContainer = document.getElementById('setup-players-roster');
@@ -143,6 +145,9 @@ function commitSetupAndStart() {
   gameState.players = playersArray;
   gameState.activePlayerId = 0;
   gameState.currentTurnResolved = true;
+
+  // 🎲 FIX: Fires up the dice pool immediately for the opening turn!
+  buildFreshPool();
 
   // Initialize and write state down instantly
   saveStateToLocalStorage();
