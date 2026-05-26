@@ -175,14 +175,17 @@
     </a>
   </footer>
 
-  <script src="gameEngine.js?v=3"></script>
-  <script>
-    // Safe lifecycle entry checkpoint on browser startup
+    <script src="gameEngine.js?v=4"></script> <script>
     window.onload = function() {
       if (localStorage.getItem('kot_companion_state')) {
         document.getElementById('resume-modal').classList.remove('hidden');
       } else {
-        try { setSetupPlayerCount(2); } catch(e) {}
+        // 🚨 UPGRADED: This will now catch and display the exact loading error!
+        try { 
+          setSetupPlayerCount(2); 
+        } catch(error) {
+          alert("🚨 GAME ENGINE CRASHED ON LOAD!\n\nReason: " + error.message);
+        }
       }
     };
   </script>
