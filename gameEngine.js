@@ -167,7 +167,6 @@ function setSetupPlayerCount(count) {
   `).join('');
 }
 
-// NEW: Reveals text row if "Custom Monster" dropdown index is hit
 function checkCustomMonsterToggle(index) {
   const selection = document.getElementById(`setup-monster-${index}`).value;
   const customInput = document.getElementById(`setup-custom-text-${index}`);
@@ -193,7 +192,6 @@ function commitSetupAndStart() {
     
     if (!nameInput || !monsterSelect || !colorSelect) continue;
 
-    // Determine final character branding choice
     let chosenMonsterName = monsterSelect.value;
     if (chosenMonsterName === 'CUSTOM_CHOICE' && customTextInput) {
       chosenMonsterName = customTextInput.value.trim() || "Unknown Beast";
@@ -221,10 +219,7 @@ function commitSetupAndStart() {
   gameState.activePlayerId = 0;
   gameState.currentTurnResolved = true;
 
-  // 🎲 FIX: Fires up the dice pool immediately for the opening turn!
   buildFreshPool();
-
-  // Initialize and write state down instantly
   saveStateToLocalStorage();
 
   document.getElementById('tab-setup-view').classList.add('hidden');
@@ -250,7 +245,6 @@ function localStorageResume() {
 
   try {
     const backup = JSON.parse(packedData);
-    // Deep structural restoration
     gameState.players = backup.players;
     gameState.activePlayerId = backup.activePlayerId;
     gameState.currentTurnResolved = backup.currentTurnResolved;
@@ -275,9 +269,8 @@ function localStorageResume() {
 function localStorageWipeFresh() {
   localStorage.removeItem('kot_companion_state');
   document.getElementById('resume-modal').classList.add('hidden');
-  setSetupPlayerCount(2); // Render safe entry level
+  setSetupPlayerCount(2);
 }
-
 
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
