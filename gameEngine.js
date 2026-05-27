@@ -706,8 +706,8 @@ function renderScoreboard() {
         }
 
         return `
-        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-3.5 rounded-2xl flex flex-col gap-2.5 shadow-[4px_4px_0px_#000000] transition-all duration-200 relative">
-            
+        <div class="bg-neutral-900 border-2 ${isEliminated ? 'border-zinc-800 opacity-40 grayscale select-none' : (p.hp > 0 && p.hp <= 3) ? 'border-red-600 shadow-[0_0_25px_rgba(220,38,38,0.7)] animate-pulse' : inCity ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : inHarbor ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.4)]' : isActivePlayer ? 'border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.2)]' : 'border-black'} p-3.5 rounded-2xl flex flex-col gap-2.5 shadow-[4px_4px_0px_#000000] transition-all duration-200 relative">
+
             <div class="flex justify-between items-start w-full gap-2">
                 <div class="flex flex-col cursor-pointer flex-1" onclick="changeActivePlayer(${p.id})">
                   <div class="flex items-center gap-1.5 flex-wrap">
