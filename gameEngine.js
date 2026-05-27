@@ -206,7 +206,16 @@ function localStorageResume() {
     gameState.harborAvailable = backup.harborAvailable;
     gameState.turnStaging = backup.turnStaging || { vp:0, hp:0, energy:0, damage:0 };
     gameState.rolledTotals = backup.rolledTotals || { one:0, two:0, three:0, heart:0, energy:0, claw:0 };
-
+  // 📊 RECORD TURN STATISTICS FOR ENDGAME SUPERLATIVES
+  const activePlayer = gameState.players[gameState.activePlayerId];
+  if (activePlayer && activePlayer.lifetimeStats) {
+    // Accumulate absolute gains from this turn's staging pool
+    activePlayer.lifetimeStats.claws += Math.max(0, gameState.turnStaging.damage || 0);
+    activePlayer.lifetimeStats.energy += Math.max(0, gameState.turnStaging.energy || 0);
+    activePlayer.lifetimeStats.hearts += Math.max(0, gameState.turnStaging.hp || 0);
+    activePlayer.lifetimeStats.vpEarned += Math.max(0, gameState.turnStaging.vp || 0);
+  }
+      
     document.getElementById('resume-modal').classList.add('hidden');
     document.getElementById('tab-setup-view').classList.add('hidden');
     
