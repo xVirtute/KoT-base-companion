@@ -95,6 +95,21 @@ function checkCustomMonsterToggle(index) {
     if (selection === 'CUSTOM_CHOICE') customInput.focus();
   }
 }
+// NEW: Drops or retracts the setup accordion panel options smoothly
+function toggleSetupDrawer(drawerId, arrowId) {
+  const drawer = document.getElementById(drawerId);
+  const arrow = document.getElementById(arrowId);
+  if (!drawer) return;
+  
+  const isHidden = drawer.classList.contains('hidden');
+  drawer.classList.toggle('hidden', !isHidden);
+  
+  if (arrow) {
+    // Rotates arrow downward when open, points right when closed
+    arrow.style.transform = isHidden ? "rotate(90deg)" : "rotate(0deg)";
+  }
+}
+
 
 function commitSetupAndStart() {
   const playersArray = [];
@@ -133,7 +148,18 @@ function commitSetupAndStart() {
   }
 
   const harborToggle = document.getElementById('setup-toggle-harbor');
+  const evolutionsToggle = document.getElementById('setup-toggle-evolutions');
+  const suddenDeathToggle = document.getElementById('setup-toggle-sudden-death');
+  const brutalHealingToggle = document.getElementById('setup-toggle-brutal-healing');
+
   gameState.harborAvailable = harborToggle ? harborToggle.checked : false;
+  
+  // Future-proofing our variant engine configurations:
+  gameState.rulesEnabled = {
+    evolutions: evolutionsToggle ? evolutionsToggle.checked : false,
+    suddenDeath: suddenDeathToggle ? suddenDeathToggle.checked : false,
+    brutalHealing: brutalHealingToggle ? brutalHealingToggle.checked : false
+  };
 
   gameState.players = playersArray;
   gameState.activePlayerId = 0;
