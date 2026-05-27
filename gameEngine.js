@@ -133,6 +133,7 @@ function commitSetupAndStart() {
     }
 
     playersArray.push({
+        playersArray.push({
       id: i,
       name: nameInput.value.trim() || `Player ${i + 1}`,
       monster: chosenMonsterName,
@@ -143,9 +144,17 @@ function commitSetupAndStart() {
       location: 'outside',
       showStatusDrawer: false, 
       statuses: { zombie: false, armor: false },
-      tokens: { poison: 0, shrink: 0, smoke: 0, mimic: false }
+      tokens: { poison: 0, shrink: 0, smoke: 0, mimic: false },
+      
+      // 👇 NEW: The hidden scoreboard tracking bag
+      lifetimeStats: {
+        claws: 0,
+        energy: 0,
+        hearts: 0,
+        vpEarned: 0
+      }
     });
-  }
+
 
   const harborToggle = document.getElementById('setup-toggle-harbor');
   const evolutionsToggle = document.getElementById('setup-toggle-evolutions');
