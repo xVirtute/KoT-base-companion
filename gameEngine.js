@@ -920,3 +920,89 @@ function toggleFullscreen() {
     }
   }
 }
+// ==========================================
+// 🏆 END-OF-GAME SUPERLATIVES ENGINE
+// ==========================================
+function triggerVictoryScreen(winnerName, winningMonster, winReason) {
+  // 1. Calculate who dominated each major category
+  const heavyHitter = [...gameState.players].sort((a,b) => b.lifetimeStats.claws - a.lifetimeStats.claws)[0];
+  const energyTycoon = [...gameState.players].sort((a,b) => b.lifetimeStats.energy - a.lifetimeStats.energy)[0];
+  const survivalist = [...gameState.players].sort((a,b) => b.lifetimeStats.hearts - a.lifetimeStats.hearts)[0];
+  const pointHoarder = [...gameState.players].sort((a,b) => b.lifetimeStats.vpEarned - a.lifetimeStats.vpEarned)[0];
+
+  // 2. Create the raw layout string for the trophies grid
+  const awardsHtml = `
+    <div class="grid grid-cols-1 gap-3 w-full max-w-sm mt-2">
+      <div class="bg-zinc-900 border border-red-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">💥</span>
+          <div class="text-left">
+            <p class="text-[10px] font-black text-red-400 uppercase tracking-widest">Heavy Hitter</p>
+            <p class="text-sm font-comic-heavy text-zinc-100">${heavyHitter.name}</p>
+            <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${heavyHitter.monster}</p>
+          </div>
+        </div>
+        <span class="font-sans font-black text-xs text-red-500 bg-red-950/40 border border-red-900/40 px-2 py-0.5 rounded-lg">${heavyHitter.lifetimeStats.claws} Claws</span>
+      </div>
+
+      <div class="bg-zinc-900 border border-emerald-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">⚡</span>
+          <div class="text-left">
+            <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Energy Tycoon</p>
+            <p class="text-sm font-comic-heavy text-zinc-100">${energyTycoon.name}</p>
+            <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${energyTycoon.monster}</p>
+          </div>
+        </div>
+        <span class="font-sans font-black text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900/40 px-2 py-0.5 rounded-lg">${energyTycoon.lifetimeStats.energy} Cubes</span>
+      </div>
+
+      <div class="bg-zinc-900 border border-blue-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">💚</span>
+          <div class="text-left">
+            <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Survivalist</p>
+            <p class="text-sm font-comic-heavy text-zinc-100">${survivalist.name}</p>
+            <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${survivalist.monster}</p>
+          </div>
+        </div>
+        <span class="font-sans font-black text-xs text-blue-400 bg-blue-950/40 border border-blue-900/40 px-2 py-0.5 rounded-lg">${survivalist.lifetimeStats.hearts} Hearts</span>
+      </div>
+
+      <div class="bg-zinc-900 border border-yellow-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🌟</span>
+          <div class="text-left">
+            <p class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Star Collector</p>
+            <p class="text-sm font-comic-heavy text-zinc-100">${pointHoarder.name}</p>
+            <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${pointHoarder.monster}</p>
+          </div>
+        </div>
+        <span class="font-sans font-black text-xs text-yellow-400 bg-yellow-950/40 border border-yellow-900/40 px-2 py-0.5 rounded-lg">${pointHoarder.vpEarned} Stars</span>
+      </div>
+    </div>
+  `;
+
+  // 3. Inject into a gorgeous fullscreen dark modal screen overlay
+  const endOverlay = document.createElement('div');
+  endOverlay.id = "victory-overlay";
+  endOverlay.className = "fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center overflow-y-auto";
+  endOverlay.innerHTML = `
+    <div class="max-w-sm w-full flex flex-col items-center gap-4 my-auto py-6">
+      <span class="text-5xl animate-bounce">👑</span>
+      <h1 class="font-comic-heavy text-3xl uppercase tracking-wider text-yellow-400 leading-tight">${winnerName} Wins!</h1>
+      <p class="text-zinc-400 text-xs font-bold uppercase tracking-widest bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800 -mt-1">${winningMonster} • ${winReason}</p>
+      
+      <div class="w-full border-t border-zinc-800/80 my-2"></div>
+      <h2 class="font-comic-heavy text-md text-purple-400 uppercase tracking-widest mb-1">📋 Match Superlatives</h2>
+      
+      ${awardsHtml}
+      
+      <button onclick="location.reload(); localStorageWipeFresh();" class="w-full mt-6 bg-yellow-400 border-2 border-black py-3.5 rounded-2xl font-comic-heavy text-base uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+        🔄 Play Another Match
+      </button>
+    </div>
+  `;
+  document.body.appendChild(endOverlay);
+}
+    
