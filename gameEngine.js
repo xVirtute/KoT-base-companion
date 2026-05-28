@@ -789,8 +789,8 @@ function showTab(targetTab) {
   }
 }
 
-
 function renderScoreboard() {
+    // 👇 AUTO-SAVE CHECKPOINT: Save data to phone memory state instantly on every single update
     saveStateToLocalStorage(); 
 
     const container = document.getElementById('player-grid');
@@ -813,6 +813,7 @@ function renderScoreboard() {
         const isEliminated = p.hp <= 0 && !isZombie;
         const isDrawerOpen = p.showStatusDrawer || false;
 
+        // Build a low-profile inline list of active status previews for the main view
         let activePreviewsHtml = '';
         if (!isEliminated) {
           if (isZombie) activePreviewsHtml += `<div class="bg-emerald-950/80 p-1 rounded-md border border-emerald-800">${STATUS_ICONS.zombie}</div>`;
@@ -911,9 +912,18 @@ function renderScoreboard() {
                             <button onclick="event.stopPropagation(); changePlayerToken(${p.id}, 'smoke', 1)" class="text-zinc-500 font-black text-sm px-1 select-none">+</button>
                           </div>
                         </div>
+                    </div> <div class="mt-2 bg-purple-950/20 border border-purple-900/40 rounded-xl p-2 flex items-center justify-between animate-fade-in">
+                      <div class="flex items-center gap-2 text-[10px] font-comic-heavy text-purple-400 uppercase tracking-widest">
+                        <span>🧬 Mutated Evolutions</span>
+                      </div>
+                      <div class="flex items-center justify-between w-20 bg-zinc-950 rounded-lg py-0.5 px-1.5 border border-zinc-800">
+                        <button onclick="event.stopPropagation(); changePlayerEvolutions(${p.id}, -1)" class="text-purple-400 font-black text-sm select-none px-1 active:scale-90 transition-all">-</button>
+                        <span class="text-xs font-black text-zinc-200">${p.evolutions || 0}</span>
+                        <button onclick="event.stopPropagation(); changePlayerEvolutions(${p.id}, 1)" class="text-purple-400 font-black text-sm select-none px-1 active:scale-90 transition-all">+</button>
+                      </div>
                     </div>
-                </div>
-            ` : ''}
+
+                </div> ` : ''}
 
             ${showStagingDrawer && !isEliminated ? `
                 <div class="mt-1.5 border-t border-zinc-800 pt-2.5 flex flex-col gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
@@ -967,18 +977,6 @@ function renderScoreboard() {
     }).join('');
 }
 
-function renderStat(id, stat, value, colorClass) {
-    return `
-        <div class="flex flex-col items-center w-11">
-            <span class="text-[8px] uppercase tracking-wider ${colorClass}/70 font-black">${stat}</span>
-            <span class="text-xl font-black ${colorClass} leading-none my-0.5">${value}</span>
-            <div class="flex gap-1 mt-0.5">
-                <button onclick="changeScoreStat(${id}, '${stat}', -1)" class="bg-neutral-800 border border-black px-1.5 py-0.5 rounded text-[10px] font-bold select-none leading-none">-</button>
-                <button onclick="changeScoreStat(${id}, '${stat}', 1)" class="bg-neutral-800 border border-black px-1.5 py-0.5 rounded text-[10px] font-bold select-none leading-none">+</button>
-            </div>
-        </div>
-    `;
-}
 
 function renderTable() {
   const activeShelf = document.getElementById('active-shelf');
