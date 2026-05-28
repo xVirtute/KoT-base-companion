@@ -728,9 +728,7 @@ function executeManualRoll() {
   }, speedStep);
 }
 
-// ==========================================
-// 5. UI RENDERING LAYER (View)
-// ==========================================
+
 // ==========================================
 // 5. UI RENDERING LAYER (View)
 // ==========================================
@@ -748,19 +746,29 @@ const STATUS_ICONS = {
 function showTab(targetTab) {
   document.getElementById('tab-score-view').classList.toggle('hidden', targetTab !== 'score');
   document.getElementById('tab-dice-view').classList.toggle('hidden', targetTab !== 'dice');
+  document.getElementById('tab-log-view').classList.toggle('hidden', targetTab !== 'log'); // 📋 Log Tab connection
   
   const scoreBtn = document.getElementById('nav-score');
   const diceBtn = document.getElementById('nav-dice');
+  const logBtn = document.getElementById('nav-log'); // 📋 Log element link
   
+  // Set default inactive styles for all buttons
+  scoreBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+  diceBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+  logBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+
+  // Force active state coloring onto the focused target click choice
   if (targetTab === 'score') {
     scoreBtn.className = "flex-1 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-xs uppercase tracking-wider transition-all";
-    diceBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
-  } else {
-    scoreBtn.className = "flex-1 py-2 bg-transparent font-comic-heavy rounded-xl text-xs uppercase text-zinc-400 hover:text-white tracking-wider transition-all";
+  } else if (targetTab === 'dice') {
     diceBtn.className = "flex-1 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-xs uppercase tracking-wider transition-all";
     renderTable();
+  } else if (targetTab === 'log') {
+    logBtn.className = "flex-1 py-2 bg-zinc-100 text-neutral-950 font-comic-heavy rounded-xl text-xs uppercase tracking-wider transition-all";
+    renderMatchLog();
   }
 }
+
 
 function renderScoreboard() {
     saveStateToLocalStorage(); 
