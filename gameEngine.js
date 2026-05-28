@@ -349,9 +349,14 @@ function changeScoreStat(playerId, stat, amount) {
 }
 
 function commitAndEndTurn() {
+function commitAndEndTurn() {
   const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
   if (!attacker) return;
 
+  // 📊 1. RECORD TURN STATISTICS FIRST (Before any staging values change or get cleared)
+  recordActiveTurnStatistics();
+
+  // Apply staging adjustments to the current active attacker
   attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
   attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
   attacker.energy = attacker.energy + gameState.turnStaging.energy;
@@ -414,6 +419,51 @@ function commitAndEndTurn() {
     setPlayerLocation(attacker, 'tokyo');
     alert(`Rex Tokyo was empty! ${attacker.name} marches in. +1 VP awarded.`);
   }
+
+  // 🏆 2. CHECK FOR IMMEDIATE VICTORY CONDITIONS
+  // A. Checking if the attacker won by reaching 20 stars
+  if (attacker.vp >= 20) {
+    triggerVictoryScreen(attacker.name, attacker.monster, "Dominance by Victory Points (20 VP)!");
+    return;
+  }
+
+  // B. Checking if only one living monster stands alone
+  const livingPlayers = gameState.players.filter(p => p.hp > 0 || (p.statuses && p.statuses.zombie));
+  if (livingPlayers.length === 1) {
+    triggerVictoryScreen(livingPlayers[0].name, livingPlayers[0].monster, "Last Monster Standing!");
+    return;
+  }
+
+  // 🔄 3. TURN CYCLE ADVANCEMENT WHEEL
+  // Move the track to the next valid, living monster index
+  let nextPlayerId = gameState.activePlayerId;
+  let safetyLoopCounter = 0;
+  
+  do {
+    nextPlayerId = (nextPlayerId + 1) % gameState.players.length;
+    safetyLoopCounter++;
+  } while (
+    gameState.players[nextPlayerId].hp === 0 && 
+    (!gameState.players[nextPlayerId].statuses || !gameState.players[nextPlayerId].statuses.zombie) && 
+    safetyLoopCounter < 10
+  );
+
+  gameState.activePlayerId = nextPlayerId;
+
+  // 🧼 4. CLEAN UP AND PREPARE FOR NEXT PLAYER
+  gameState.turnStaging = { vp: 0, hp: 0, energy: 0, damage: 0 };
+  gameState.currentTurnResolved = true;
+  turnRollCount = 0;
+
+  // Fire up fresh 6 dice pool for the incoming player turn
+  if (typeof buildFreshPool === 'function') {
+    buildFreshPool();
+  }
+
+  // Auto-save and draw down state instantly
+  saveStateToLocalStorage();
+  renderScoreboard();
+}
   // ==========================================
   // EXPANSION AUTOMATION: Resolve End-of-Turn Poison
   // ==========================================
