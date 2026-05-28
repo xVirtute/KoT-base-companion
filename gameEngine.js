@@ -985,19 +985,25 @@ function toggleFullscreen() {
   }
 }
 // ==========================================
-// 🏆 END-OF-GAME SUPERLATIVES ENGINE
+// 🏆 VISUAL END-OF-GAME SUPERLATIVES ENGINE
 // ==========================================
-function triggerVictoryScreen(winnerName, winningMonster, winReason) {
-  // 1. Calculate who dominated each major category
-  const heavyHitter = [...gameState.players].sort((a,b) => b.lifetimeStats.claws - a.lifetimeStats.claws)[0];
-  const energyTycoon = [...gameState.players].sort((a,b) => b.lifetimeStats.energy - a.lifetimeStats.energy)[0];
-  const survivalist = [...gameState.players].sort((a,b) => b.lifetimeStats.hearts - a.lifetimeStats.hearts)[0];
-  const pointHoarder = [...gameState.players].sort((a,b) => b.lifetimeStats.vpEarned - a.lifetimeStats.vpEarned)[0];
+function triggerVictoryScreen(player, reason) {
+  if (!player) return;
 
-  // 2. Create the raw layout string for the trophies grid
+  // 🛠️ FIXED: Safely unpacks the player object variables directly inside the function
+  const winnerName = player.name || "Unknown Beast";
+  const winnerMonster = player.monster || "Monster";
+  const winnerColor = player.color || "text-yellow-400";
+
+  // 📊 FIXED: Added safe navigation (?.) and default fallbacks (|| 0) to prevent 'undefined' stats
+  const heavyHitter = [...gameState.players].sort((a,b) => (b.lifetimeStats?.claws || 0) - (a.lifetimeStats?.claws || 0))[0] || player;
+  const energyTycoon = [...gameState.players].sort((a,b) => (b.lifetimeStats?.energy || 0) - (a.lifetimeStats?.energy || 0))[0] || player;
+  const survivalist = [...gameState.players].sort((a,b) => (b.lifetimeStats?.hearts || 0) - (a.lifetimeStats?.hearts || 0))[0] || player;
+  const pointHoarder = [...gameState.players].sort((a,b) => (b.lifetimeStats?.vpEarned || 0) - (a.lifetimeStats?.vpEarned || 0))[0] || player;
+
   const awardsHtml = `
     <div class="grid grid-cols-1 gap-3 w-full max-w-sm mt-2">
-      <div class="bg-zinc-900 border border-red-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+      <div class="bg-zinc-900 border border-red-900/40 p-3 rounded-2xl flex items-center justify-between shadow-md">
         <div class="flex items-center gap-3">
           <span class="text-2xl">💥</span>
           <div class="text-left">
@@ -1006,10 +1012,10 @@ function triggerVictoryScreen(winnerName, winningMonster, winReason) {
             <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${heavyHitter.monster}</p>
           </div>
         </div>
-        <span class="font-sans font-black text-xs text-red-500 bg-red-950/40 border border-red-900/40 px-2 py-0.5 rounded-lg">${heavyHitter.lifetimeStats.claws} Claws</span>
+        <span class="font-sans font-black text-xs text-red-400 bg-red-950/40 border border-red-900/30 px-2 py-0.5 rounded-lg">${heavyHitter.lifetimeStats?.claws || 0} Claws</span>
       </div>
 
-      <div class="bg-zinc-900 border border-emerald-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+      <div class="bg-zinc-900 border border-emerald-900/40 p-3 rounded-2xl flex items-center justify-between shadow-md">
         <div class="flex items-center gap-3">
           <span class="text-2xl">⚡</span>
           <div class="text-left">
@@ -1018,10 +1024,10 @@ function triggerVictoryScreen(winnerName, winningMonster, winReason) {
             <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${energyTycoon.monster}</p>
           </div>
         </div>
-        <span class="font-sans font-black text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900/40 px-2 py-0.5 rounded-lg">${energyTycoon.lifetimeStats.energy} Cubes</span>
+        <span class="font-sans font-black text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 px-2 py-0.5 rounded-lg">${energyTycoon.lifetimeStats?.energy || 0} Cubes</span>
       </div>
 
-      <div class="bg-zinc-900 border border-blue-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+      <div class="bg-zinc-900 border border-blue-900/40 p-3 rounded-2xl flex items-center justify-between shadow-md">
         <div class="flex items-center gap-3">
           <span class="text-2xl">💚</span>
           <div class="text-left">
@@ -1030,10 +1036,10 @@ function triggerVictoryScreen(winnerName, winningMonster, winReason) {
             <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${survivalist.monster}</p>
           </div>
         </div>
-        <span class="font-sans font-black text-xs text-blue-400 bg-blue-950/40 border border-blue-900/40 px-2 py-0.5 rounded-lg">${survivalist.lifetimeStats.hearts} Hearts</span>
+        <span class="font-sans font-black text-xs text-blue-400 bg-blue-950/40 border border-blue-900/30 px-2 py-0.5 rounded-lg">${survivalist.lifetimeStats?.hearts || 0} Hearts</span>
       </div>
 
-      <div class="bg-zinc-900 border border-yellow-900/60 p-3 rounded-2xl flex items-center justify-between shadow-md">
+      <div class="bg-zinc-900 border border-yellow-900/40 p-3 rounded-2xl flex items-center justify-between shadow-md">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🌟</span>
           <div class="text-left">
@@ -1042,31 +1048,38 @@ function triggerVictoryScreen(winnerName, winningMonster, winReason) {
             <p class="text-[9px] font-bold text-zinc-500 uppercase -mt-0.5">${pointHoarder.monster}</p>
           </div>
         </div>
-        <span class="font-sans font-black text-xs text-yellow-400 bg-yellow-950/40 border border-yellow-900/40 px-2 py-0.5 rounded-lg">${pointHoarder.vpEarned} Stars</span>
+        <span class="font-sans font-black text-xs text-yellow-400 bg-yellow-950/30 border border-yellow-900/30 px-2 py-0.5 rounded-lg">${pointHoarder.lifetimeStats?.vpEarned || 0} Stars</span>
       </div>
     </div>
   `;
 
-  // 3. Inject into a gorgeous fullscreen dark modal screen overlay
-  const endOverlay = document.createElement('div');
-  endOverlay.id = "victory-overlay";
-  endOverlay.className = "fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center overflow-y-auto";
-  endOverlay.innerHTML = `
+  let overlay = document.getElementById('victory-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'victory-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  // 🎨 STYLED: Keeps your beautiful custom text colors and comic layout completely intact
+  overlay.className = "fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center overflow-y-auto animate-fade-in";
+  overlay.innerHTML = `
     <div class="max-w-sm w-full flex flex-col items-center gap-4 my-auto py-6">
       <span class="text-5xl animate-bounce">👑</span>
       <h1 class="font-comic-heavy text-3xl uppercase tracking-wider text-yellow-400 leading-tight">${winnerName} Wins!</h1>
-      <p class="text-zinc-400 text-xs font-bold uppercase tracking-widest bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800 -mt-1">${winningMonster} • ${winReason}</p>
+      <p class="text-zinc-400 text-xs font-bold uppercase tracking-widest bg-zinc-900 px-4 py-1.5 rounded-full border border-zinc-800/80 -mt-1">${winnerMonster} • ${reason}</p>
       
-      <div class="w-full border-t border-zinc-800/80 my-2"></div>
-      <h2 class="font-comic-heavy text-md text-purple-400 uppercase tracking-widest mb-1">📋 Match Superlatives</h2>
+      <div class="w-full border-t border-zinc-800/60 my-2"></div>
+      <h2 class="font-comic-heavy text-sm text-purple-400 uppercase tracking-widest mb-1">📋 Match Superlatives</h2>
       
       ${awardsHtml}
       
-      <button onclick="location.reload(); localStorageWipeFresh();" class="w-full mt-6 bg-yellow-400 border-2 border-black py-3.5 rounded-2xl font-comic-heavy text-base uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+      <button onclick="resetGameToSetup();" class="w-full mt-6 bg-yellow-400 border-2 border-black py-4 rounded-2xl comic-box font-comic-heavy text-base uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
         🔄 Play Another Match
       </button>
     </div>
   `;
+}
+
   document.body.appendChild(endOverlay);
 }
     
