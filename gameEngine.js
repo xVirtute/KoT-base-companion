@@ -1105,3 +1105,34 @@ function triggerVictoryScreen(player, reason) {
     </div>
   `;
 }
+// ==========================================
+// 📊 MATCH LOG HISTORY ENGINE (Step 3)
+// ==========================================
+function logMatchAction(text) {
+  if (!gameState.matchLogArray) gameState.matchLogArray = [];
+  const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  gameState.matchLogArray.unshift(`[${timestamp}] ${text}`);
+  saveStateToLocalStorage();
+}
+
+function clearMatchLog() {
+  gameState.matchLogArray = [];
+  logMatchAction("🧹 Match log reset by table administrator.");
+  renderMatchLog();
+}
+
+function renderMatchLog() {
+  const target = document.getElementById('log-container');
+  if (!target) return;
+  const history = gameState.matchLogArray || [];
+  if (history.length === 0) {
+    target.innerHTML = `<p class="text-zinc-600 italic text-center my-auto">No turns finalized yet...</p>`;
+    return;
+  }
+  target.innerHTML = history.map(line => `
+    <div class="bg-zinc-900/40 border border-zinc-900 p-2.5 rounded-xl font-mono text-[11px] text-zinc-300 leading-normal animate-fade-in">
+      ${line}
+    </div>
+  `).join('');
+}
+
