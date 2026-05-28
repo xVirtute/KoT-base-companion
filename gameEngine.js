@@ -8,7 +8,14 @@ let gameState = {
     activePlayerId: 0,         // Tracks whose turn it is (0 = Player 1, 1 = Player 2, etc.)
     currentTurnResolved: true,   // Hides the staging drawer until a roll is sent over
     rolledTotals: { one: 0, two: 0, three: 0, energy: 0, heart: 0, claw: 0 },
-    turnStaging: { vp: 0, hp: 0, energy: 0, damage: 0 } // Our temporary tweakable staging area
+    turnStaging: { vp: 0, hp: 0, energy: 0, damage: 0 }, // Our temporary tweakable staging area
+    
+    // 📦 ADD THIS FIXED PIECE: Initial rules engine safe-net
+    rulesEnabled: {
+      evolutions: false,
+      suddenDeath: false,
+      brutalHealing: false
+    }
 };
 
 let turnRollCount = 0;
