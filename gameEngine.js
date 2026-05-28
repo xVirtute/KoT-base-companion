@@ -349,7 +349,6 @@ function changeScoreStat(playerId, stat, amount) {
 }
 
 function commitAndEndTurn() {
-function commitAndEndTurn() {
   const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
   if (!attacker) return;
 
