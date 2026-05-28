@@ -150,6 +150,8 @@ function commitSetupAndStart() {
       showStatusDrawer: false, 
       statuses: { zombie: false, armor: false },
       tokens: { poison: 0, shrink: 0, smoke: 0, mimic: false },
+// 🧬 NEW: Tracks current active evolution cards in hand/play
+      evolutions: 0, 
       lifetimeStats: {
         claws: 0,
         energy: 0,
@@ -629,6 +631,18 @@ function changePlayerToken(playerId, tokenType, amount) {
     player.tokens[tokenType] = Math.max(0, player.tokens[tokenType] + amount);
   }
 
+// 🧬 NEW: Manages expansion evolution card deck counts safely
+function changePlayerEvolutions(playerId, amount) {
+  const player = gameState.players.find(p => p.id === playerId);
+  if (!player) return;
+
+  // Safe-net fallback for older saved sessions
+  if (player.evolutions === undefined) player.evolutions = 0;
+
+  player.evolutions = Math.max(0, player.evolutions + amount);
+  renderScoreboard();
+}
+
   renderScoreboard();
 }
 
@@ -639,7 +653,6 @@ function toggleStatusDrawer(playerId) {
   player.showStatusDrawer = !player.showStatusDrawer;
   renderScoreboard();
 }
-
 
 // ==========================================
 // 4. DICE ENGINE LOGIC
