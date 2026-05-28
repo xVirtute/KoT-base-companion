@@ -353,10 +353,6 @@ function commitAndEndTurn() {
 // 📝 NEW: Automatically writes to your history tab ledger on click
   logMatchAction(`💥 ${attacker.name} (${attacker.monster}) committed: +${gameState.turnStaging.vp} VP, +${gameState.turnStaging.hp} HP, +${gameState.turnStaging.energy} Energy, dealing ${gameState.turnStaging.damage} DMG.`);
 
-  if (typeof recordActiveTurnStatistics === 'function') {
-    recordActiveTurnStatistics();
-  }
-
   // 📊 A. RECORD TURN STATISTICS FOR ENDGAME SUPERLATIVES
   if (typeof recordActiveTurnStatistics === 'function') {
     recordActiveTurnStatistics();
