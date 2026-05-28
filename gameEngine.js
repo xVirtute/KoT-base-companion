@@ -731,6 +731,9 @@ function executeManualRoll() {
 // ==========================================
 // 5. UI RENDERING LAYER (View)
 // ==========================================
+// ==========================================
+// 5. UI RENDERING LAYER (View)
+// ==========================================
 
 // Premium Vector Asset Repository for Card Statuses
 const STATUS_ICONS = {
@@ -760,7 +763,6 @@ function showTab(targetTab) {
 }
 
 function renderScoreboard() {
-    // 👇 AUTO-SAVE CHECKPOINT: Save data to phone memory state instantly on every single update
     saveStateToLocalStorage(); 
 
     const container = document.getElementById('player-grid');
@@ -783,7 +785,6 @@ function renderScoreboard() {
         const isEliminated = p.hp <= 0 && !isZombie;
         const isDrawerOpen = p.showStatusDrawer || false;
 
-        // Build a low-profile inline list of active status previews for the main view
         let activePreviewsHtml = '';
         if (!isEliminated) {
           if (isZombie) activePreviewsHtml += `<div class="bg-emerald-950/80 p-1 rounded-md border border-emerald-800">${STATUS_ICONS.zombie}</div>`;
@@ -965,10 +966,21 @@ function renderTable() {
 
 function generateDieMarkup(die) {
   const block = document.createElement('button');
-  let componentClasses = "aspect-square w-full max-w-[85px] rounded-2xl bg-zinc-800 border-4 border-zinc-700 flex items-center justify-center p-2 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all duration-75 ";
-  if (die.held) block.classList.add('bg-zinc-900', 'border-emerald-500/80');
+  
+  // 🛠️ FIXED: Class list assignment string now dynamically scales up to hold state frames flawlessly
+  let componentClasses = "aspect-square w-full max-w-[85px] rounded-2xl flex items-center justify-center p-2 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all duration-75 border-4 ";
+  
+  if (die.held) {
+    componentClasses += "bg-zinc-900 border-emerald-500/80";
+  } else {
+    componentClasses += "bg-zinc-800 border-zinc-700";
+  }
+  
+  if (die.isShuffling) {
+    componentClasses += " animate-tumble";
+  }
+  
   block.className = componentClasses;
-  if (die.isShuffling) block.classList.add('animate-tumble');
   block.onclick = () => toggleLockState(die.id);
   
   if (die.face) block.innerHTML = SVG_ASSETS[die.face];
@@ -997,12 +1009,11 @@ function toggleFullscreen() {
 function triggerVictoryScreen(player, reason) {
   if (!player) return;
 
-  // 🛠️ FIXED: Safely unpacks the player object variables directly inside the function
+  // Safely unpacks the player object variables directly inside the function
   const winnerName = player.name || "Unknown Beast";
   const winnerMonster = player.monster || "Monster";
-  const winnerColor = player.color || "text-yellow-400";
 
-  // 📊 FIXED: Added safe navigation (?.) and default fallbacks (|| 0) to prevent 'undefined' stats
+  // Added safe navigation (?.) and default fallbacks (|| 0) to prevent 'undefined' stats
   const heavyHitter = [...gameState.players].sort((a,b) => (b.lifetimeStats?.claws || 0) - (a.lifetimeStats?.claws || 0))[0] || player;
   const energyTycoon = [...gameState.players].sort((a,b) => (b.lifetimeStats?.energy || 0) - (a.lifetimeStats?.energy || 0))[0] || player;
   const survivalist = [...gameState.players].sort((a,b) => (b.lifetimeStats?.hearts || 0) - (a.lifetimeStats?.hearts || 0))[0] || player;
@@ -1067,7 +1078,7 @@ function triggerVictoryScreen(player, reason) {
     document.body.appendChild(overlay);
   }
 
-  // 🎨 STYLED: Keeps your beautiful custom text colors and comic layout completely intact
+  // Keeps your beautiful custom text colors and comic layout completely intact
   overlay.className = "fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center overflow-y-auto animate-fade-in";
   overlay.innerHTML = `
     <div class="max-w-sm w-full flex flex-col items-center gap-4 my-auto py-6">
@@ -1086,7 +1097,3 @@ function triggerVictoryScreen(player, reason) {
     </div>
   `;
 }
-
-  document.body.appendChild(endOverlay);
-}
-    
