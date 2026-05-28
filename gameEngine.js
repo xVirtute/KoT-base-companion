@@ -95,7 +95,7 @@ function checkCustomMonsterToggle(index) {
     if (selection === 'CUSTOM_CHOICE') customInput.focus();
   }
 }
-// NEW: Drops or retracts the setup accordion panel options smoothly
+
 function toggleSetupDrawer(drawerId, arrowId) {
   const drawer = document.getElementById(drawerId);
   const arrow = document.getElementById(arrowId);
@@ -105,11 +105,9 @@ function toggleSetupDrawer(drawerId, arrowId) {
   drawer.classList.toggle('hidden', !isHidden);
   
   if (arrow) {
-    // Rotates arrow downward when open, points right when closed
     arrow.style.transform = isHidden ? "rotate(90deg)" : "rotate(0deg)";
   }
 }
-
 
 function commitSetupAndStart() {
   const playersArray = [];
@@ -132,8 +130,8 @@ function commitSetupAndStart() {
       chosenMonsterName = customTextInput.value.trim() || "Unknown Beast";
     }
 
+    // 🛠️ FIXED: Removed duplicate declaration and cleanly nested lifetimeStats here
     playersArray.push({
-        playersArray.push({
       id: i,
       name: nameInput.value.trim() || `Player ${i + 1}`,
       monster: chosenMonsterName,
@@ -145,8 +143,6 @@ function commitSetupAndStart() {
       showStatusDrawer: false, 
       statuses: { zombie: false, armor: false },
       tokens: { poison: 0, shrink: 0, smoke: 0, mimic: false },
-      
-      // 👇 NEW: The hidden scoreboard tracking bag
       lifetimeStats: {
         claws: 0,
         energy: 0,
@@ -154,7 +150,7 @@ function commitSetupAndStart() {
         vpEarned: 0
       }
     });
-
+  } // 🛠️ FIXED: Correctly closed the for loop container
 
   const harborToggle = document.getElementById('setup-toggle-harbor');
   const evolutionsToggle = document.getElementById('setup-toggle-evolutions');
@@ -163,7 +159,6 @@ function commitSetupAndStart() {
 
   gameState.harborAvailable = harborToggle ? harborToggle.checked : false;
   
-  // Future-proofing our variant engine configurations:
   gameState.rulesEnabled = {
     evolutions: evolutionsToggle ? evolutionsToggle.checked : false,
     suddenDeath: suddenDeathToggle ? suddenDeathToggle.checked : false,
@@ -206,16 +201,9 @@ function localStorageResume() {
     gameState.harborAvailable = backup.harborAvailable;
     gameState.turnStaging = backup.turnStaging || { vp:0, hp:0, energy:0, damage:0 };
     gameState.rolledTotals = backup.rolledTotals || { one:0, two:0, three:0, heart:0, energy:0, claw:0 };
-  // 📊 RECORD TURN STATISTICS FOR ENDGAME SUPERLATIVES
-  const activePlayer = gameState.players[gameState.activePlayerId];
-  if (activePlayer && activePlayer.lifetimeStats) {
-    // Accumulate absolute gains from this turn's staging pool
-    activePlayer.lifetimeStats.claws += Math.max(0, gameState.turnStaging.damage || 0);
-    activePlayer.lifetimeStats.energy += Math.max(0, gameState.turnStaging.energy || 0);
-    activePlayer.lifetimeStats.hearts += Math.max(0, gameState.turnStaging.hp || 0);
-    activePlayer.lifetimeStats.vpEarned += Math.max(0, gameState.turnStaging.vp || 0);
-  }
+    gameState.rulesEnabled = backup.rulesEnabled || { evolutions: false, suddenDeath: false, brutalHealing: false };
       
+    // 🛠️ FIXED: Misplaced statistics calculation cleanly swept out of this function
     document.getElementById('resume-modal').classList.add('hidden');
     document.getElementById('tab-setup-view').classList.add('hidden');
     
@@ -235,6 +223,18 @@ function localStorageWipeFresh() {
   document.getElementById('resume-modal').classList.add('hidden');
   setSetupPlayerCount(2);
 }
+
+// 📊 NEW: Standalone background tracker engine for statistics
+function recordActiveTurnStatistics() {
+  const activePlayer = gameState.players[gameState.activePlayerId];
+  if (activePlayer && activePlayer.lifetimeStats) {
+    activePlayer.lifetimeStats.claws += Math.max(0, gameState.turnStaging.damage || 0);
+    activePlayer.lifetimeStats.energy += Math.max(0, gameState.turnStaging.energy || 0);
+    activePlayer.lifetimeStats.hearts += Math.max(0, gameState.turnStaging.hp || 0);
+    activePlayer.lifetimeStats.vpEarned += Math.max(0, gameState.turnStaging.vp || 0);
+  }
+}
+
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
 // ==========================================
