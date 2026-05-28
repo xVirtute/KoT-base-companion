@@ -238,12 +238,12 @@ function recordActiveTurnStatistics() {
 // ==========================================
 // 3. SCORE & STATE CONTROLLER LOGIC
 // ==========================================
+
 // NEW HELPER: Handles moves and automatically awards +1 VP for entering Tokyo
 function setPlayerLocation(player, newLocation) {
   const oldLocation = player.location;
   player.location = newLocation;
 
-  // Rule: Entering Tokyo/Harbor from the outside rewards 1 VP instantly
   if (oldLocation === 'outside' && (newLocation === 'tokyo' || newLocation === 'harbor')) {
     player.vp = Math.min(20, player.vp + 1);
   }
@@ -257,7 +257,6 @@ function toggleLocation(playerId, targetLocation) {
   if (player.location === targetLocation) {
     setPlayerLocation(player, 'outside');
   } else {
-    // Eviction Rule: Kick out anyone currently in that specific slot
     gameState.players.forEach(p => {
       if (p.location === targetLocation) setPlayerLocation(p, 'outside');
     });
@@ -286,22 +285,15 @@ function sendRollToScoreboard() {
 
   const t = gameState.rolledTotals;
   
-  // 1. Calculate Standard Points (3-of-a-kind rule)
   let calculatedVp = 0;
   if (t.one >= 3) calculatedVp += 1 + (t.one - 3);
   if (t.two >= 3) calculatedVp += 2 + (t.two - 3);
   if (t.three >= 3) calculatedVp += 3 + (t.three - 3);
 
-  // 2. Calculate Energy
   let calculatedEnergy = t.energy;
-  
-  // 3. Calculate Hearts (Heal only works if you are OUTSIDE Tokyo)
   let calculatedHp = (activePlayer.location === 'outside') ? t.heart : 0;
-  
-  // 4. Calculate Attack Smashes
   let calculatedDamage = t.claw;
 
-  // Save everything to our tweakable staging deck
   gameState.turnStaging = {
     vp: calculatedVp,
     hp: calculatedHp,
@@ -311,10 +303,10 @@ function sendRollToScoreboard() {
 
   gameState.currentTurnResolved = false;
   
-  // Go back to scoreboard view and refresh layout
   showTab('score');
   renderScoreboard();
 }
+
 function tweakStaging(stat, amount) {
   gameState.turnStaging[stat] = Math.max(0, gameState.turnStaging[stat] + amount);
   renderScoreboard();
@@ -326,19 +318,16 @@ function changeScoreStat(playerId, stat, amount) {
 
     if (!player.statuses) player.statuses = { zombie: false, armor: false };
 
-    // 🧟 ZOMBIE RULE: Completely block healing modifications
     if (player.statuses.zombie && stat === 'hp' && amount > 0) {
         alert(`🧟 Undead monsters cannot heal!`);
         return;
     }
 
-    // Standard elimination checkpoint
     const isCurrentlyDead = player.hp <= 0 && !player.statuses.zombie;
     if (isCurrentlyDead && stat !== 'hp') return; 
 
     player[stat] = Math.max(0, player[stat] + amount);
 
-    // Elimination Trigger: Ignore if they are currently a zombie
     if (stat === 'hp' && player.hp === 0 && !player.statuses.zombie) {
         player.location = 'outside';
         alert(`💀 ${player.name} has been eliminated from the game!`);
@@ -352,10 +341,12 @@ function commitAndEndTurn() {
   const attacker = gameState.players.find(p => p.id === gameState.activePlayerId);
   if (!attacker) return;
 
-  // 📊 1. RECORD TURN STATISTICS FIRST (Before any staging values change or get cleared)
-  recordActiveTurnStatistics();
+  // 📊 A. RECORD TURN STATISTICS FOR ENDGAME SUPERLATIVES
+  if (typeof recordActiveTurnStatistics === 'function') {
+    recordActiveTurnStatistics();
+  }
 
-  // Apply staging adjustments to the current active attacker
+  // Apply staging adjustments to the active attacker
   attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
   attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
   attacker.energy = attacker.energy + gameState.turnStaging.energy;
@@ -365,19 +356,17 @@ function commitAndEndTurn() {
   let someoneYielded = false;
   let vacatedSlot = '';
 
+  // Process combat values across targets
   if (attackDmg > 0) {
     gameState.players.forEach(target => {
       if (target.id === attacker.id) return;
       
-      // Check if target is truly dead (HP 0 and not a zombie)
       const targetDead = target.hp <= 0 && (!target.statuses || !target.statuses.zombie);
       if (targetDead) return;
 
       const targetInTokyo = (target.location === 'tokyo' || target.location === 'harbor');
 
       if ((attackerInTokyo && !targetInTokyo) || (!attackerInTokyo && targetInTokyo)) {
-        
-        // 🛡️ ARMOR RULE: Mitigate incoming smash values by 1
         let finalDamage = attackDmg;
         if (target.statuses && target.statuses.armor) {
           finalDamage = Math.max(0, finalDamage - 1);
@@ -385,7 +374,6 @@ function commitAndEndTurn() {
 
         target.hp = Math.max(0, target.hp - finalDamage);
 
-        // Handle survival interactions and yield requests
         if (!attackerInTokyo && targetInTokyo && target.hp > 0) {
           const wantsToYield = confirm(`💥 ${target.name} took ${finalDamage} damage in Tokyo!\n\nDo they want to YIELD Tokyo and step outside?`);
           if (wantsToYield) {
@@ -395,7 +383,6 @@ function commitAndEndTurn() {
           }
         }
         
-        // Automatic Eviction rule if a non-zombie hits absolute zero
         if (target.hp === 0 && (!target.statuses || !target.statuses.zombie) && targetInTokyo) {
           vacatedSlot = target.location;
           setPlayerLocation(target, 'outside');
@@ -409,6 +396,7 @@ function commitAndEndTurn() {
     }
   }
 
+  // Handle empty Tokyo logic mechanics
   const isTokyoOccupied = gameState.players.some(p => {
     const isAlive = p.hp > 0 || (p.statuses && p.statuses.zombie);
     return isAlive && p.location === 'tokyo';
@@ -419,22 +407,28 @@ function commitAndEndTurn() {
     alert(`Rex Tokyo was empty! ${attacker.name} marches in. +1 VP awarded.`);
   }
 
-  // 🏆 2. CHECK FOR IMMEDIATE VICTORY CONDITIONS
-  // A. Checking if the attacker won by reaching 20 stars
+  // 🤢 B. EXPANSION AUTOMATION: Resolve Poison Tokens cleanly inside execution thread
+  if (attacker.tokens && attacker.tokens.poison > 0) {
+    attacker.hp = Math.max(0, attacker.hp - attacker.tokens.poison);
+    alert(`🤢 ${attacker.name} suffers ${attacker.tokens.poison} damage from Poison tokens at the end of their turn!`);
+    if (attacker.hp === 0) {
+      attacker.location = 'outside';
+    }
+  }
+
+  // 🏆 C. CHECK FOR IMMEDIATE MATCH END CONDITIONS
   if (attacker.vp >= 20) {
-    triggerVictoryScreen(attacker.name, attacker.monster, "Dominance by Victory Points (20 VP)!");
+    triggerVictoryScreen(attacker, "Dominance by Victory Points (20 VP)!");
     return;
   }
 
-  // B. Checking if only one living monster stands alone
   const livingPlayers = gameState.players.filter(p => p.hp > 0 || (p.statuses && p.statuses.zombie));
   if (livingPlayers.length === 1) {
-    triggerVictoryScreen(livingPlayers[0].name, livingPlayers[0].monster, "Last Monster Standing!");
+    triggerVictoryScreen(livingPlayers[0], "Last Monster Standing!");
     return;
   }
 
-  // 🔄 3. TURN CYCLE ADVANCEMENT WHEEL
-  // Move the track to the next valid, living monster index
+  // 🔄 D. ROTATE ACTIVE PLAYERS CLOCKWISE
   let nextPlayerId = gameState.activePlayerId;
   let safetyLoopCounter = 0;
   
@@ -449,68 +443,37 @@ function commitAndEndTurn() {
 
   gameState.activePlayerId = nextPlayerId;
 
-  // 🧼 4. CLEAN UP AND PREPARE FOR NEXT PLAYER
+  // 🧼 E. STAGING FLUSH AND CLEAR OUT FOR NEXT TURN
   gameState.turnStaging = { vp: 0, hp: 0, energy: 0, damage: 0 };
   gameState.currentTurnResolved = true;
   turnRollCount = 0;
 
-  // Fire up fresh 6 dice pool for the incoming player turn
+  const counterDisplay = document.getElementById('roll-counter-display');
+  if (counterDisplay) counterDisplay.innerText = 0;
+
   if (typeof buildFreshPool === 'function') {
     buildFreshPool();
   }
 
-  // Auto-save and draw down state instantly
   saveStateToLocalStorage();
   renderScoreboard();
 }
-  // ==========================================
-  // EXPANSION AUTOMATION: Resolve End-of-Turn Poison
-  // ==========================================
-  if (attacker.tokens && attacker.tokens.poison > 0) {
-    attacker.hp = Math.max(0, attacker.hp - attacker.tokens.poison);
-    alert(`🤢 ${attacker.name} suffers ${attacker.tokens.poison} damage from Poison tokens at the end of their turn!`);
-    
-    // If poison kills them, boot them out of Tokyo immediately
-    if (attacker.hp === 0) {
-      attacker.location = 'outside';
-    }
-  }
-  // clean up the current turn state 
-  gameState.currentTurnResolved = true;
-  turnRollCount = 0;
-  
-  const counterDisplay = document.getElementById('roll-counter-display');
-  if (counterDisplay) counterDisplay.innerText = 0;
 
-  buildFreshPool();
-
-  // Route clockwise, skipping only truly eliminated players (0 HP and NOT a zombie)
-  let nextId = gameState.activePlayerId;
-  do {
-    nextId = (nextId + 1) % gameState.players.length;
-  } while (gameState.players[nextId].hp <= 0 && (!gameState.players[nextId].statuses || !gameState.players[nextId].statuses.zombie) && nextId !== gameState.activePlayerId);
-  
-  changeActivePlayer(nextId);
-  checkVictoryConditions();
-}
-
-// NEW: Checks if a monster has won by points or survival
+// NEW: Checks if a monster has won by points or survival during external score adjustments
 function checkVictoryConditions() {
-  // 1. Condition A: Has anyone reached 20+ Victory Points?
   const vpWinner = gameState.players.find(p => p.vp >= 20);
   if (vpWinner) {
     triggerVictoryScreen(vpWinner, "Victory by Points (20+ VP)!");
     return;
   }
 
-  // 2. Condition B: Is there only one surviving monster left?
-  const livingPlayers = gameState.players.filter(p => p.hp > 0);
+  const livingPlayers = gameState.players.filter(p => p.hp > 0 || (p.statuses && p.statuses.zombie));
   if (livingPlayers.length === 1 && gameState.players.length > 1) {
     triggerVictoryScreen(livingPlayers[0], "Last Monster Standing!");
   }
 }
 
-// NEW: Generates and handles the full-screen winner card drop
+// NEW: Generates the premium full-screen winner card drop with stats integrated
 function triggerVictoryScreen(player, reason) {
   let overlay = document.getElementById('victory-overlay');
   if (!overlay) {
@@ -519,24 +482,78 @@ function triggerVictoryScreen(player, reason) {
     document.body.appendChild(overlay);
   }
   
-  // Set up dynamic layout coloring matching the monster's character theme
+  // Parse background metrics records for the trophy grid
+  const heavyHitter = [...gameState.players].sort((a,b) => (b.lifetimeStats?.claws || 0) - (a.lifetimeStats?.claws || 0))[0] || player;
+  const energyTycoon = [...gameState.players].sort((a,b) => (b.lifetimeStats?.energy || 0) - (a.lifetimeStats?.energy || 0))[0] || player;
+  const survivalist = [...gameState.players].sort((a,b) => (b.lifetimeStats?.hearts || 0) - (a.lifetimeStats?.hearts || 0))[0] || player;
+  const pointHoarder = [...gameState.players].sort((a,b) => (b.lifetimeStats?.vpEarned || 0) - (a.lifetimeStats?.vpEarned || 0))[0] || player;
+
   const borderClass = player.color ? player.color.replace('text-', 'border-') : 'border-yellow-400';
 
-  overlay.className = "fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in";
+  overlay.className = "fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center overflow-y-auto animate-fade-in";
   overlay.innerHTML = `
-    <div class="relative bg-zinc-950 border-4 ${borderClass} p-8 rounded-3xl max-w-sm w-full shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col items-center gap-4">
+    <div class="relative bg-zinc-950 border-4 ${borderClass} p-6 rounded-3xl max-w-sm w-full shadow-[0_0_50px_rgba(0,0,0,0.85)] flex flex-col items-center gap-3 my-auto">
       
       <button onclick="dismissVictoryScreen()" class="absolute top-3 right-4 text-zinc-600 hover:text-zinc-300 font-sans text-xl font-black select-none p-1 active:scale-90 transition-all">✕</button>
       
-      <span class="text-6xl animate-bounce mt-2">👑</span>
-      <h1 class="font-comic-heavy text-3xl uppercase tracking-wider ${player.color}">${player.name}</h1>
-      <p class="text-zinc-500 font-bold text-xs uppercase tracking-wide bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800 -mt-2">${player.monster}</p>
+      <span class="text-5xl animate-bounce mt-1">👑</span>
+      <h1 class="font-comic-heavy text-2xl uppercase tracking-wider ${player.color} leading-none mt-1">${player.name}</h1>
+      <p class="text-zinc-500 font-bold text-[10px] uppercase tracking-wide bg-zinc-900 px-3 py-0.5 rounded-full border border-zinc-800">${player.monster}</p>
       
-      <div class="my-3 text-yellow-400 font-comic-heavy text-base uppercase tracking-wide bg-yellow-500/10 border border-yellow-500/20 px-4 py-2 rounded-xl w-full">
+      <div class="text-yellow-400 font-comic-heavy text-xs uppercase tracking-wide bg-yellow-500/10 border border-yellow-500/20 px-3 py-2 rounded-xl w-full my-1">
         ${reason}
       </div>
       
-      <button onclick="resetGameToSetup()" class="w-full mt-2 bg-yellow-400 border-2 border-black py-3 rounded-xl font-comic-heavy text-sm uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+      <div class="w-full border-t border-zinc-900 my-1"></div>
+      <h2 class="font-comic-heavy text-[11px] text-purple-400 uppercase tracking-widest">🏆 Match Superlatives</h2>
+      
+      <div class="grid grid-cols-1 gap-2 w-full text-left">
+        <div class="bg-zinc-900/50 border border-zinc-800/80 p-2 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">💥</span>
+            <div>
+              <p class="text-[8px] font-black text-red-400 uppercase tracking-wider">Heavy Hitter</p>
+              <p class="text-xs font-comic-heavy text-zinc-200 leading-tight">${heavyHitter.name}</p>
+            </div>
+          </div>
+          <span class="font-sans font-black text-[10px] text-red-400 bg-red-950/40 px-2 py-0.5 rounded border border-red-900/30">${heavyHitter.lifetimeStats?.claws || 0} Claws</span>
+        </div>
+
+        <div class="bg-zinc-900/50 border border-zinc-800/80 p-2 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">⚡</span>
+            <div>
+              <p class="text-[8px] font-black text-emerald-400 uppercase tracking-wider">Energy Tycoon</p>
+              <p class="text-xs font-comic-heavy text-zinc-200 leading-tight">${energyTycoon.name}</p>
+            </div>
+          </div>
+          <span class="font-sans font-black text-[10px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/30">${energyTycoon.lifetimeStats?.energy || 0} Cubes</span>
+        </div>
+
+        <div class="bg-zinc-900/50 border border-zinc-800/80 p-2 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">💚</span>
+            <div>
+              <p class="text-[8px] font-black text-blue-400 uppercase tracking-wider">Survivalist</p>
+              <p class="text-xs font-comic-heavy text-zinc-200 leading-tight">${survivalist.name}</p>
+            </div>
+          </div>
+          <span class="font-sans font-black text-[10px] text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded border border-blue-900/30">${survivalist.lifetimeStats?.hearts || 0} Heals</span>
+        </div>
+
+        <div class="bg-zinc-900/50 border border-zinc-800/80 p-2 rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🌟</span>
+            <div>
+              <p class="text-[8px] font-black text-yellow-500 uppercase tracking-wider">Star Collector</p>
+              <p class="text-xs font-comic-heavy text-zinc-200 leading-tight">${pointHoarder.name}</p>
+            </div>
+          </div>
+          <span class="font-sans font-black text-[10px] text-yellow-400 bg-yellow-950/30 px-2 py-0.5 rounded border border-yellow-900/30">${pointHoarder.lifetimeStats?.vpEarned || 0} Stars</span>
+        </div>
+      </div>
+      
+      <button onclick="resetGameToSetup()" class="w-full mt-3 bg-yellow-400 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
         🔄 Start New Game
       </button>
     </div>
@@ -550,32 +567,32 @@ function dismissVictoryScreen() {
 
 function resetGameToSetup() {
   dismissVictoryScreen();
+  localStorage.removeItem('kot_companion_state');
   
-  // Pivot UI visibility back to the initial layout setup screen
   document.getElementById('tab-setup-view').classList.remove('hidden');
   document.getElementById('main-nav').classList.add('hidden');
   document.getElementById('tab-score-view').classList.add('hidden');
   document.getElementById('tab-dice-view').classList.add('hidden');
   
-  // Wipe variables clear for clean roster generation
   gameState.players = [];
   gameState.activePlayerId = 0;
   gameState.currentTurnResolved = true;
+  
+  if (typeof setSetupPlayerCount === 'function') {
+    setSetupPlayerCount(2);
+  }
 }
 
-// NEW: Toggles card statuses safely and handles rule resets
 function togglePlayerStatus(playerId, statusName) {
   const player = gameState.players.find(p => p.id === playerId);
   if (!player) return;
 
-  // Initialize status memory safe-net if missing
   if (!player.statuses) {
     player.statuses = { zombie: false, armor: false };
   }
 
   player.statuses[statusName] = !player.statuses[statusName];
 
-  // Rule Cleanup: If they turn off Zombie mode while at 0 HP, they instantly drop dead
   if (statusName === 'zombie' && !player.statuses.zombie && player.hp === 0) {
     player.location = 'outside';
     alert(`💀 ${player.name} is no longer a Zombie and collapses! Eliminated.`);
@@ -584,12 +601,10 @@ function togglePlayerStatus(playerId, statusName) {
   renderScoreboard();
 }
 
-// NEW: Manages expansion tokens (Poison, Shrink, Smoke, Mimic)
 function changePlayerToken(playerId, tokenType, amount) {
   const player = gameState.players.find(p => p.id === playerId);
   if (!player) return;
 
-  // Safe initialization wrapper
   if (!player.tokens) {
     player.tokens = { poison: 0, shrink: 0, smoke: 0, mimic: false };
   }
@@ -603,7 +618,6 @@ function changePlayerToken(playerId, tokenType, amount) {
   renderScoreboard();
 }
 
-// NEW: Toggles the visibility of a player's status effect tray
 function toggleStatusDrawer(playerId) {
   const player = gameState.players.find(p => p.id === playerId);
   if (!player) return;
@@ -611,6 +625,7 @@ function toggleStatusDrawer(playerId) {
   player.showStatusDrawer = !player.showStatusDrawer;
   renderScoreboard();
 }
+
 
 // ==========================================
 // 4. DICE ENGINE LOGIC
