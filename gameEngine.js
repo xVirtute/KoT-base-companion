@@ -3,14 +3,14 @@
 // 1. MASTER DATA LAYER (Model)
 // ==========================================
 let gameState = {
+let gameState = {
     players: [],
     harborAvailable: false,
-    activePlayerId: 0,         // Tracks whose turn it is (0 = Player 1, 1 = Player 2, etc.)
-    currentTurnResolved: true,   // Hides the staging drawer until a roll is sent over
+    activePlayerId: 0,         
+    currentTurnResolved: true,   
+    currentRound: 1,           // ⏱️ NEW: Tracks global match cycles
     rolledTotals: { one: 0, two: 0, three: 0, energy: 0, heart: 0, claw: 0 },
-    turnStaging: { vp: 0, hp: 0, energy: 0, damage: 0 }, // Our temporary tweakable staging area
-    
-    // 📦 ADD THIS FIXED PIECE: Initial rules engine safe-net
+    turnStaging: { vp: 0, hp: 0, energy: 0, damage: 0 }, 
     rulesEnabled: {
       evolutions: false,
       suddenDeath: false,
@@ -197,6 +197,7 @@ function commitSetupAndStart() {
 
   gameState.players = playersArray;
   gameState.activePlayerId = 0;
+  gameState.currentRound = 1; // 🛠️ NEW: Reset round clock on new matches
   gameState.currentTurnResolved = true;
 
   buildFreshPool();
@@ -232,6 +233,8 @@ function localStorageResume() {
     gameState.turnStaging = backup.turnStaging || { vp:0, hp:0, energy:0, damage:0 };
     gameState.rolledTotals = backup.rolledTotals || { one:0, two:0, three:0, heart:0, energy:0, claw:0 };
     gameState.rulesEnabled = backup.rulesEnabled || { evolutions: false, suddenDeath: false, brutalHealing: false };
+    gameState.currentRound = backup.currentRound || 1; // 🛠️ NEW: Restore round depth from device memory
+
       
     // 🛠️ FIXED: Misplaced statistics calculation cleanly swept out of this function
     document.getElementById('resume-modal').classList.add('hidden');
@@ -474,11 +477,33 @@ function commitAndEndTurn() {
     safetyLoopCounter < 10
   );
 
+  // ⏱️ NEW: If the player ID rolls back down, a full round loop across the table has finished!
+  if (nextPlayerId <= gameState.activePlayerId) {
+    if (!gameState.currentRound) gameState.currentRound = 1;
+    gameState.currentRound++;
+  }
+
   gameState.activePlayerId = nextPlayerId;
+
+  // 🌋 NEW: Apply Sudden Death environmental decay damage to the incoming player
+  const incomingPlayer = gameState.players[gameState.activePlayerId];
+  if (gameState.rulesEnabled && gameState.rulesEnabled.suddenDeath && gameState.currentRound >= 6) {
+    if (incomingPlayer && incomingPlayer.hp > 0) {
+      incomingPlayer.hp = Math.max(0, incomingPlayer.hp - 1);
+      
+      logMatchAction(`⚠️ Sudden Death environmental decay dealt 1 unavoidable DMG to ${incomingPlayer.name} at the start of their turn.`);
+      
+      if (incomingPlayer.hp === 0 && (!incomingPlayer.statuses || !incomingPlayer.statuses.zombie)) {
+        incomingPlayer.location = 'outside';
+        alert(`🌋 Sudden Death! The toxic air has completely melted ${incomingPlayer.name}!`);
+      }
+    }
+  }
 
   // 🧼 E. STAGING FLUSH AND CLEAR OUT FOR NEXT TURN
   gameState.turnStaging = { vp: 0, hp: 0, energy: 0, damage: 0 };
   gameState.currentTurnResolved = true;
+  
   turnRollCount = 0;
 
   const counterDisplay = document.getElementById('roll-counter-display');
@@ -814,6 +839,23 @@ function renderScoreboard() {
 
     const container = document.getElementById('player-grid');
     if (!container) return;
+    
+    // ⏱️ NEW: Generate a premium, low-profile round status banner automatically
+    let roundHeaderHtml = '';
+    if (gameState.rulesEnabled && gameState.rulesEnabled.suddenDeath) {
+        const activeSuddenDeath = (gameState.currentRound || 1) >= 6;
+        roundHeaderHtml = `
+          <div class="col-span-full border p-3 rounded-2xl flex items-center justify-between font-comic-heavy text-xs uppercase tracking-wider mb-1.5 shadow-md transition-all duration-300 ${activeSuddenDeath ? 'bg-red-950/40 border-red-500 text-red-400 animate-pulse' : 'bg-zinc-900/60 border-zinc-800 text-zinc-500'}">
+            <div class="flex items-center gap-2">
+              <span>⏱️ Match Progress: <span class="text-zinc-100">Round ${gameState.currentRound || 1}</span></span>
+            </div>
+            <span class="text-[10px] font-sans font-black tracking-wide">${activeSuddenDeath ? '⚠️ SUDDEN DEATH ACTIVE (-1 HP / TURN)' : 'Sudden Death: Pending (Round 6)'}</span>
+          </div>
+        `;
+    }
+    
+    // 🛠️ UPDATED: Prepend the round header html directly before rendering the main map roster array
+    container.innerHTML = roundHeaderHtml + gameState.players.map(p => {
     
     container.innerHTML = gameState.players.map(p => {
         const inCity = p.location === 'tokyo';
