@@ -74,6 +74,9 @@ function setSetupPlayerCount(count) {
   const rosterContainer = document.getElementById('setup-players-roster');
   if (!rosterContainer) return;
 
+  // 🧬 Fetch permanently saved device custom monsters
+  const savedCustoms = getCustomMonstersFromDevice();
+
   rosterContainer.innerHTML = Array.from({ length: count }).map((_, i) => `
     <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-2xl flex flex-col gap-2 transition-all">
       <div class="flex items-center gap-2">
@@ -83,6 +86,7 @@ function setSetupPlayerCount(count) {
       <div class="grid grid-cols-2 gap-2">
         <select id="setup-monster-${i}" onchange="checkCustomMonsterToggle(${i})" class="bg-zinc-950 border border-zinc-800 px-2 py-1.5 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none">
           ${MONSTERS.map((m, idx) => `<option value="${m}" ${idx === i ? 'selected' : ''}>${m}</option>`).join('')}
+          ${savedCustoms.map(m => `<option value="${m}">✍️ ${m} (Saved)</option>`).join('')}
           <option value="CUSTOM_CHOICE">✍️ -- Custom Monster --</option>
         </select>
         <select id="setup-color-${i}" class="bg-zinc-950 border border-zinc-800 px-2 py-1.5 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none">
@@ -93,6 +97,7 @@ function setSetupPlayerCount(count) {
     </div>
   `).join('');
 }
+
 
 function checkCustomMonsterToggle(index) {
   const selection = document.getElementById(`setup-monster-${index}`).value;
@@ -135,6 +140,8 @@ function commitSetupAndStart() {
     let chosenMonsterName = monsterSelect.value;
     if (chosenMonsterName === 'CUSTOM_CHOICE' && customTextInput) {
       chosenMonsterName = customTextInput.value.trim() || "Unknown Beast";
+        // 💾 NEW: Permanently memorize this brand-new custom creation for future match setups!
+      saveCustomMonsterToDevice(chosenMonsterName);
     }
 
     // 🛠️ FIXED: Removed duplicate declaration and cleanly nested lifetimeStats here
