@@ -185,10 +185,10 @@
         <button onclick="executeManualRoll()" class="flex-1 bg-emerald-500 border-2 border-black py-4 rounded-2xl font-comic-heavy text-xl text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
           SMASH & ROLL!
         </button>
-        <div class="bg-zinc-900 border border-zinc-800 px-4 flex items-center justify-center gap-2 rounded-2xl">
-          <span class="text-xl">🎲</span>
-          <span id="roll-counter-display" class="font-comic-heavy text-yellow-400 text-xl">0</span>
-        </div>
+        <div onclick="resetRollCounter()" class="bg-zinc-900 border border-zinc-800 px-4 flex items-center justify-center gap-2 rounded-2xl cursor-pointer hover:bg-zinc-800 active:scale-95 transition-all">
+  <span class="text-xl">🎲</span>
+  <span id="roll-counter-display" class="font-comic-heavy text-yellow-400 text-xl">0</span>
+</div>
       </div>
       <button onclick="sendRollToScoreboard()" class="w-full bg-yellow-400 border-2 border-black py-3 rounded-xl font-comic-heavy text-sm uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
         👉 Send Turn to Scoreboard
