@@ -976,6 +976,19 @@ function renderScoreboard() {
 }
 
 
+function renderStat(id, stat, value, colorClass) {
+    return `
+        <div class="flex flex-col items-center w-11">
+            <span class="text-[8px] uppercase tracking-wider ${colorClass}/70 font-black">${stat}</span>
+            <span class="text-xl font-black ${colorClass} leading-none my-0.5">${value}</span>
+            <div class="flex gap-1 mt-0.5">
+                <button onclick="changeScoreStat(${id}, '${stat}', -1)" class="bg-neutral-800 border border-black px-1.5 py-0.5 rounded text-[10px] font-bold select-none leading-none">-</button>
+                <button onclick="changeScoreStat(${id}, '${stat}', 1)" class="bg-neutral-800 border border-black px-1.5 py-0.5 rounded text-[10px] font-bold select-none leading-none">+</button>
+            </div>
+        </div>
+    `;
+}
+
 function renderTable() {
   const activeShelf = document.getElementById('active-shelf');
   const lockedShelf = document.getElementById('locked-shelf');
