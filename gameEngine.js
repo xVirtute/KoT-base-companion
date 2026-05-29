@@ -3,7 +3,6 @@
 // 1. MASTER DATA LAYER (Model)
 // ==========================================
 let gameState = {
-let gameState = {
     players: [],
     harborAvailable: false,
     activePlayerId: 0,         
