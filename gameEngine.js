@@ -484,7 +484,7 @@ function commitAndEndTurn() {
 
   gameState.activePlayerId = nextPlayerId;
 
-  // 🌋 NEW: Apply Sudden Death environmental decay damage to the incoming player
+  // 🌋 Apply Sudden Death environmental decay damage to the incoming player
   const incomingPlayer = gameState.players[gameState.activePlayerId];
   if (gameState.rulesEnabled && gameState.rulesEnabled.suddenDeath && gameState.currentRound >= 6) {
     if (incomingPlayer && incomingPlayer.hp > 0) {
@@ -495,6 +495,13 @@ function commitAndEndTurn() {
       if (incomingPlayer.hp === 0 && (!incomingPlayer.statuses || !incomingPlayer.statuses.zombie)) {
         incomingPlayer.location = 'outside';
         alert(`🌋 Sudden Death! The toxic air has completely melted ${incomingPlayer.name}!`);
+        
+        // 🎯 SURGICAL FIX: Check immediately if this elimination ends the match!
+        const livingPlayers = gameState.players.filter(p => p.hp > 0 || (p.statuses && p.statuses.zombie));
+        if (livingPlayers.length === 1) {
+            triggerVictoryScreen(livingPlayers[0], "Last Monster Standing (Sudden Death Survival)!");
+            return; // Halt further turn processing since the game is over
+        }
       }
     }
   }
