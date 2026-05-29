@@ -385,7 +385,20 @@ function commitAndEndTurn() {
   attacker.vp = Math.min(20, attacker.vp + gameState.turnStaging.vp);
   attacker.hp = Math.min(10, attacker.hp + gameState.turnStaging.hp);
   attacker.energy = attacker.energy + gameState.turnStaging.energy;
-
+  // 🩸 NEW: Brutal Healing radioactive feedback engine
+  if (gameState.rulesEnabled && gameState.rulesEnabled.brutalHealing && (attacker.location === 'tokyo' || attacker.location === 'harbor')) {
+    const hotZoneHearts = gameState.rolledTotals.heart || 0;
+    if (hotZoneHearts > 0) {
+      attacker.hp = Math.max(0, attacker.hp - hotZoneHearts);
+      
+      logMatchAction(`💔 Brutal Healing! ${attacker.name} suffered ${hotZoneHearts} self-inflicted DMG from rolling Hearts inside the hot zone.`);
+      alert(`💔 Brutal Healing! Inside Tokyo, your radioactive hearts backfired and dealt ${hotZoneHearts} damage to you!`);
+      
+      if (attacker.hp === 0 && (!attacker.statuses || !attacker.statuses.zombie)) {
+        attacker.location = 'outside';
+      }
+    }
+  }
   const attackDmg = gameState.turnStaging.damage;
   const attackerInTokyo = (attacker.location === 'tokyo' || attacker.location === 'harbor');
   let someoneYielded = false;
