@@ -179,6 +179,20 @@ function commitSetupAndStart() {
   gameState.currentTurnResolved = true;
 
   buildFreshPool();
+    // 💾 NEW: Custom Homebrew Monster Persistent Memory Bank
+function getCustomMonstersFromDevice() {
+  return JSON.parse(localStorage.getItem('kot_custom_monsters') || '[]');
+}
+
+function saveCustomMonsterToDevice(monsterName) {
+  if (!monsterName || monsterName === "Unknown Beast") return;
+  const customs = getCustomMonstersFromDevice();
+  if (!customs.includes(monsterName)) {
+    customs.push(monsterName);
+    localStorage.setItem('kot_custom_monsters', JSON.stringify(customs));
+  }
+}
+    
   saveStateToLocalStorage();
 
   document.getElementById('tab-setup-view').classList.add('hidden');
