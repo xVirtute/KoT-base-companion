@@ -627,18 +627,17 @@ function changePlayerToken(playerId, tokenType, amount) {
     player.tokens[tokenType] = Math.max(0, player.tokens[tokenType] + amount);
   }
 
-// 🧬 NEW: Manages expansion evolution card deck counts safely
+  renderScoreboard();
+} // 🛠️ FIXED: Properly closed changePlayerToken here
+
+// 🧬 NEW: Manages expansion evolution card deck counts safely and globally
 function changePlayerEvolutions(playerId, amount) {
   const player = gameState.players.find(p => p.id === playerId);
   if (!player) return;
 
-  // Safe-net fallback for older saved sessions
   if (player.evolutions === undefined) player.evolutions = 0;
 
   player.evolutions = Math.max(0, player.evolutions + amount);
-  renderScoreboard();
-}
-
   renderScoreboard();
 }
 
@@ -649,6 +648,7 @@ function toggleStatusDrawer(playerId) {
   player.showStatusDrawer = !player.showStatusDrawer;
   renderScoreboard();
 }
+
 
 // ==========================================
 // 4. DICE ENGINE LOGIC
