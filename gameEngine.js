@@ -681,12 +681,14 @@ function toggleLockState(id) {
 }
 
 function executeManualRoll() {
-    if (executionLock) return;
+  if (executionLock) return;
 
-  // EXPANSION AUTOMATION: Shrink tokens subtract from maximum allowed dice
+  // EXPANSION AUTOMATION: Shrink tokens subtract from the dynamically selected pool size
   const activePlayer = gameState.players.find(p => p.id === gameState.activePlayerId);
   const shrinkPenalty = (activePlayer && activePlayer.tokens) ? activePlayer.tokens.shrink : 0;
-  const maxAllowedDice = Math.max(1, 6 - shrinkPenalty); // Never drop below 1 die
+  
+  // 🛠️ FIXED: Now correctly references poolSize so extra dice power cards actually work!
+  const maxAllowedDice = Math.max(1, poolSize - shrinkPenalty); 
 
   // If the total dice pool array has expanded beyond our shrunken limit, trim it down
   if (diceArray.length > maxAllowedDice) {
@@ -738,11 +740,11 @@ function executeManualRoll() {
       executionLock = false;
       renderTable();
       
-      // Optional debug line to verify it works on your phone:
       console.log("Current Tally:", JSON.stringify(gameState.rolledTotals));
     }
   }, speedStep);
 }
+
 
 
 // ==========================================
