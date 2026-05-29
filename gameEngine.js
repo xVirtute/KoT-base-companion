@@ -1164,4 +1164,11 @@ function renderMatchLog() {
     </div>
   `).join('');
 }
+// 🎲 Manual reset for accidental or miscounted rolls
+function resetRollCounter() {
+  turnRollCount = 0;
+  const display = document.getElementById('roll-counter-display');
+  if (display) display.innerText = 0;
+  logMatchAction("🎲 Dice roll counter manually reset to 0.");
+}
 
