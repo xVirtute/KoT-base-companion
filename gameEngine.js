@@ -856,8 +856,6 @@ function renderScoreboard() {
     
     // 🛠️ UPDATED: Prepend the round header html directly before rendering the main map roster array
     container.innerHTML = roundHeaderHtml + gameState.players.map(p => {
-    
-    container.innerHTML = gameState.players.map(p => {
         const inCity = p.location === 'tokyo';
         const inHarbor = p.location === 'harbor';
         const isActivePlayer = p.id === gameState.activePlayerId;
