@@ -101,19 +101,6 @@
         <button onclick="setSetupPlayerCount(4)" id="btn-count-4" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">4</button>
         <button onclick="setSetupPlayerCount(5)" id="btn-count-5" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">5</button>
         <button onclick="setSetupPlayerCount(6)" id="btn-count-6" class="setup-count-btn bg-zinc-800 border-2 border-zinc-700 py-2 rounded-xl font-comic-heavy text-lg text-zinc-400 transition-all">6</button>
-        <div class="w-full max-w-sm mx-auto mt-6 border border-zinc-800 bg-zinc-900/20 p-4 rounded-2xl flex flex-col gap-3">
-    <div class="flex justify-between items-center">
-      <h3 class="font-comic-heavy text-xs uppercase text-zinc-400 tracking-widest flex items-center gap-2">
-        🏆 All-Time Standings
-      </h3>
-      <button onclick="toggleSetupLeaderboard()" id="btn-toggle-leaderboard" class="text-[10px] font-sans font-black text-yellow-400 uppercase tracking-wider bg-yellow-500/10 hover:bg-yellow-500/20 px-3 py-1 rounded-xl transition-all">
-        Show History ▼
-      </button>
-    </div>
-
-    <div id="leaderboard-display-container" class="hidden flex flex-col gap-2 max-h-60 overflow-y-auto pr-1 mt-1">
-      </div>
-        </div>
       </div>
     </section>
     
@@ -168,6 +155,12 @@
     <button onclick="initGameFromSetup()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-neutral-950 font-comic-heavy text-2xl py-4 rounded-2xl comic-box tracking-wide transform active:translate-y-[2px] active:shadow-[2px_2px_0px_#000000] transition-all shrink-0 mb-6">
       START CRUSHING!
     </button>
+  <button onclick="toggleSetupLeaderboard()" id="btn-toggle-leaderboard" class="w-full mt-3 bg-zinc-800 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-zinc-200 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+    🏆 View Leaderboard
+  </button>
+
+  <div id="leaderboard-display-container" class="hidden flex flex-col gap-2 max-h-72 overflow-y-auto pr-1 mt-4 w-full">
+  </div>
   </div>
 
   <div id="tab-score-view" class="flex-1 p-4 pt-20 overflow-y-auto hidden">
