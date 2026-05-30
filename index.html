@@ -152,16 +152,17 @@
       </div>
     </div>
 
-    <button onclick="initGameFromSetup()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-neutral-950 font-comic-heavy text-2xl py-4 rounded-2xl comic-box tracking-wide transform active:translate-y-[2px] active:shadow-[2px_2px_0px_#000000] transition-all shrink-0 mb-6">
-      START CRUSHING!
+  <div class="w-full flex flex-col gap-3 mt-6">
+    <button onclick="startGame()" class="w-full bg-yellow-400 border-2 border-black py-4 rounded-2xl comic-box font-comic-heavy text-base uppercase tracking-wider text-neutral-950 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+      💥 Start Crushing
     </button>
-  <button onclick="toggleSetupLeaderboard()" id="btn-toggle-leaderboard" class="w-full mt-3 bg-zinc-800 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-zinc-200 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
-    🏆 View Leaderboard
-  </button>
+    <button onclick="toggleSetupLeaderboard()" id="btn-toggle-leaderboard" class="w-full bg-zinc-800 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-zinc-200 shadow-[4px_4px_0px_#000000] active:scale-95 transition-all">
+      🏆 View Leaderboard
+    </button>
+    <div id="leaderboard-display-container" class="hidden flex flex-col gap-2 max-h-64 overflow-y-auto pr-1 mt-2 w-full">
+      </div>
+  </div>
 
-  <div id="leaderboard-display-container" class="hidden flex flex-col gap-2 max-h-72 overflow-y-auto pr-1 mt-4 w-full">
-  </div>
-  </div>
 
   <div id="tab-score-view" class="flex-1 p-4 pt-20 overflow-y-auto hidden">
     <div id="player-grid" class="grid grid-cols-1 gap-4 max-w-md mx-auto"></div>
