@@ -1344,12 +1344,12 @@ function toggleSetupLeaderboard() {
   if (isHidden) {
     renderLeaderboardView();
     container.classList.remove('hidden');
-    button.innerText = "Hide History ▲";
-    button.className = "text-[10px] font-sans font-black text-zinc-400 uppercase tracking-wider bg-zinc-800 px-3 py-1 rounded-xl transition-all";
+    button.innerText = "✕ Close Leaderboard";
+    // Drops the shadow depth down slightly to look "pressed" when open
+    button.className = "w-full mt-3 bg-zinc-900 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-zinc-400 shadow-[2px_2px_0px_#000000] transition-all";
   } else {
     container.classList.add('hidden');
-    button.innerText = "Show History ▼";
-    button.className = "text-[10px] font-sans font-black text-yellow-400 uppercase tracking-wider bg-yellow-500/10 px-3 py-1 rounded-xl transition-all";
+    button.innerText = "🏆 View Leaderboard";
+    button.className = "w-full mt-3 bg-zinc-800 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-zinc-200 shadow-[4px_4px_0px_#000000] transition-all";
   }
 }
-
