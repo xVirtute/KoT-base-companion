@@ -1313,28 +1313,38 @@ function renderLeaderboardView() {
     return;
   }
 
-  container.innerHTML = leaderboard.map(record => `
-    <div class="bg-zinc-950 border border-zinc-900 rounded-2xl p-3 flex flex-col gap-2 shadow-md">
-      <div class="flex justify-between items-start">
-        <div>
-          <span class="font-comic-heavy uppercase text-sm tracking-wide ${record.color}">${record.winner}</span>
-          <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-wider block">${record.monster}</span>
+  container.innerHTML = leaderboard.map(record => {
+    // Safe fallback extractions to prevent undefined split crashes
+    const matchReason = (record.reason || 'Victory').split('(')[0];
+    const hitterName = (record.superlatives?.heavyHitter?.name || 'Monster').split(' ')[0];
+    const tycoonName = (record.superlatives?.energyTycoon?.name || 'Monster').split(' ')[0];
+    const survivorName = (record.superlatives?.survivalist?.name || 'Monster').split(' ')[0];
+    const hoarderName = (record.superlatives?.pointHoarder?.name || 'Monster').split(' ')[0];
+
+    return `
+      <div class="bg-zinc-950 border border-zinc-900 rounded-2xl p-3 flex flex-col gap-2 shadow-md text-left">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="font-comic-heavy uppercase text-sm tracking-wide ${record.color || 'text-yellow-400'}">${record.winner || 'Unknown'}</span>
+            <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-wider block">${record.monster || 'Monster'}</span>
+          </div>
+          <div class="text-right flex flex-col items-end">
+            <span class="text-[9px] font-sans font-black text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-800">${record.date || 'Recent'}</span>
+            <span class="text-[8px] font-bold text-purple-400 uppercase tracking-tight mt-1">${matchReason}</span>
+          </div>
         </div>
-        <div class="text-right flex flex-col items-end">
-          <span class="text-[9px] font-sans font-black text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-800">${record.date}</span>
-          <span class="text-[8px] font-bold text-purple-400 uppercase tracking-tight mt-1">${record.reason.split('(')[0]}</span>
+        
+        <div class="grid grid-cols-4 gap-1 border-t border-zinc-900 pt-2 text-[8px] font-mono text-zinc-500 uppercase tracking-tight">
+          <div class="truncate"><span class="text-xs">💥</span> ${hitterName}</div>
+          <div class="truncate"><span class="text-xs">⚡</span> ${tycoonName}</div>
+          <div class="truncate"><span class="text-xs">💚</span> ${survivorName}</div>
+          <div class="truncate"><span class="text-xs">🌟</span> ${hoarderName}</div>
         </div>
       </div>
-      
-      <div class="grid grid-cols-4 gap-1 border-t border-zinc-900 pt-2 text-[8px] font-mono text-zinc-500 uppercase tracking-tight">
-        <div class="truncate"><span class="text-xs">💥</span> ${record.superlatives.heavyHitter.name.split(' ')[0]}</div>
-        <div class="truncate"><span class="text-xs">⚡</span> ${record.superlatives.energyTycoon.name.split(' ')[0]}</div>
-        <div class="truncate"><span class="text-xs">💚</span> ${record.superlatives.survivalist.name.split(' ')[0]}</div>
-        <div class="truncate"><span class="text-xs">🌟</span> ${record.superlatives.pointHoarder.name.split(' ')[0]}</div>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
+
 
 function toggleSetupLeaderboard() {
   const container = document.getElementById('leaderboard-display-container');
