@@ -650,6 +650,7 @@ function resetGameToSetup() {
   document.getElementById('main-nav').classList.add('hidden');
   document.getElementById('tab-score-view').classList.add('hidden');
   document.getElementById('tab-dice-view').classList.add('hidden');
+  document.getElementById('tab-log-view').classList.add('hidden');
 
   // Resets the leaderboard panel visibility states cleanly on app reset
   const leaderboardContainer = document.getElementById('leaderboard-display-container');
@@ -660,15 +661,16 @@ function resetGameToSetup() {
     leaderboardBtn.className = "w-full mt-3 bg-zinc-800 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-zinc-200 shadow-[4px_4px_0px_#000000] transition-all";
   }
 
-  
   gameState.players = [];
   gameState.activePlayerId = 0;
   gameState.currentTurnResolved = true;
+  gameState.currentRound = 1;
   
   if (typeof setSetupPlayerCount === 'function') {
     setSetupPlayerCount(2);
   }
 }
+
 
 function togglePlayerStatus(playerId, statusName) {
   const player = gameState.players.find(p => p.id === playerId);
