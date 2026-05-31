@@ -183,8 +183,8 @@ function commitSetupAndStart() {
 
   const harborToggle = document.getElementById('setup-toggle-harbor');
   const evolutionsToggle = document.getElementById('setup-toggle-evolutions');
-  const suddenDeathToggle = document.getElementById('setup-toggle-sudden-death');
-  const brutalHealingToggle = document.getElementById('setup-toggle-brutal-healing');
+  const suddenDeathToggle = document.getElementById('setup-sudden-death');
+  const brutalHealingToggle = document.getElementById('setup-brutal-healing');
 
   gameState.harborAvailable = harborToggle ? harborToggle.checked : false;
   
