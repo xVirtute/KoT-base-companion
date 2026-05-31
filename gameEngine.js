@@ -1367,3 +1367,17 @@ function toggleSetupLeaderboard() {
     button.className = "w-full mt-3 bg-zinc-800 border-2 border-black py-3 rounded-2xl comic-box font-comic-heavy text-sm uppercase tracking-wider text-zinc-200 shadow-[4px_4px_0px_#000000] transition-all";
   }
 }
+
+// ==========================================
+// 🚨 EMERGENCY MOBILE DIAGNOSTICS HOOK
+// ==========================================
+window.onerror = function(message, source, lineno, colno, error) {
+  alert(
+    "🚨 CRITICAL RUNTIME ERROR CRASH!\n\n" +
+    "Message: " + message + "\n" +
+    "File: " + source.split('/').pop() + "\n" +
+    "Line: " + lineno + " | Column: " + colno
+  );
+  return false;
+};
+
