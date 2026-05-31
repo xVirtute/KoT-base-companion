@@ -1112,8 +1112,8 @@ function generateDieMarkup(die) {
   block.className = componentClasses;
   block.onclick = () => toggleLockState(die.id);
   
-  if (die.face) block.innerHTML = SVG_ASSETS[die.face];
-  else block.innerHTML = `<span class="font-comic-heavy text-5xl text-zinc-600 select-none leading-none">?</span>`;
+    if (die.face) block.innerHTML = SVG_ASSETS[die.face];
+  else block.innerHTML = `<svg viewBox="0 0 100 100" class="w-full h-full text-zinc-600 fill-current select-none"><text x="50%" y="75%" text-anchor="middle" font-family="'Luckiest Guy', cursive" font-size="75" stroke="#000" stroke-width="4">?</text></svg>`;
   return block;
 }
 
