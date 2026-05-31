@@ -1113,7 +1113,7 @@ function generateDieMarkup(die) {
   block.onclick = () => toggleLockState(die.id);
   
   if (die.face) block.innerHTML = SVG_ASSETS[die.face];
-  else block.innerHTML = `<span class="font-comic-heavy text-3xl text-zinc-600 select-none">?</span>`;
+  else block.innerHTML = `<span class="font-comic-heavy text-5xl text-zinc-600 select-none leading-none">?</span>`;
   return block;
 }
 
